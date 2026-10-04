@@ -1,0 +1,4 @@
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#0b0d14}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);display:flex;justify-content:center;align-items:center;min-height:100vh}
+canvas{width:100%;max-width:960px;aspect-ratio:16/9;background:#000}
