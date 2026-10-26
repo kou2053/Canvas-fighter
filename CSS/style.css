@@ -1,4 +1,17 @@
-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#0b0d14}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);display:flex;justify-content:center;align-items:center;min-height:100vh}
-canvas{width:100%;max-width:960px;aspect-ratio:16/9;background:#000}
+/* ゲーム画面(canvas)は、画面(ウィンドウ)の大きさに合わせて 16:9 のまま、入るいちばん大きいサイズに広がる。
+   余った部分は背景色(--bg)の帯になる。中の絵の細かさ(解像度)は script.js の fitCanvas が画面に合わせて決める */
+:root{box-sizing:border-box;--bg:#15111c;
+  --safe-w:calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));
+  --safe-h:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+@supports (height:100dvh){:root{--safe-h:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg)}
+body{display:flex;justify-content:center;align-items:center;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  box-sizing:border-box;touch-action:manipulation}
+canvas{display:block;width:min(var(--safe-w),calc(var(--safe-h) * 16 / 9));height:auto;aspect-ratio:16/9;background:#000}
+
+/* 縦向きの小さな画面: 文字が小さくなりすぎるので、横向きにするよう案内する(ゲームはそのまま動く) */
+@media (orientation:portrait) and (max-width:700px){
+  body::after{content:"画面を横向きにすると遊びやすくなります";position:fixed;left:0;right:0;bottom:max(16px,env(safe-area-inset-bottom));
+    text-align:center;font:800 15px "M PLUS 1p",sans-serif;color:#f1f1ec;padding:10px 16px;background:#1d1826;border-top:3px solid #ffd23f}
+}
