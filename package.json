@@ -1,13 +1,16 @@
 {
-  "name": "canvas-fighter-online",
+  "name": "canvas-fighters",
   "version": "1.0.0",
-  "description": "Online Canvas Fighter",
+  "private": true,
+  "description": "CANVAS FIGHTERS のサーバー(ゲームのファイルを配り、オンライン対戦の入力を中継する)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "ws": "^8.18.0"
   }
 }
