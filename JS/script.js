@@ -2133,6 +2133,7 @@ function koUpdate(S) {
   if (rpPlaying()) trMeterRecord();
   const L = A.st === 'ko' ? A : B;
   if ((L.koRest >= 0 && L.t - L.koRest > KO_TIME.rest) || ko > KO_TIME.max) {
+    if (typeof NET !== 'undefined' && NET.on && NET.predicting) return;   // オンライン: 予想で進めている間は勝負を決めない(確定してから)
     ko = 0;
     if (rpPlaying()) rpReachedEnd(); // リプレイは結果画面に行かず、最後の場面で止まる
     else endFight(B.hp <= 0);
@@ -2862,9 +2863,9 @@ function inputFromBits(IW, PC, ST) {
 function upd() {
   if (sc === 'fight' && opt.mode === 'train' && typeof trFrozenGate === 'function' && trFrozenGate()) return;   // トレーニングの一時停止(コマ送り)
   let netIn = null;
-  if (sc === 'fight' && NET.on) {                 // オンライン: 2人分の入力がそろうまでは、このFを進めない(fr・姿勢も進めない。両方の画面で同じにするため。net.js)
-    netIn = netFrameInputs();
-    if (!netIn) return;
+  if (sc === 'fight' && NET.on) {                 // オンライン: net.js の netTick が、確定した状態から入力を渡して何Fか進め直す(ロールバック)
+    if (!NET.inject) return netTick();
+    netIn = NET.inject;
   }
   fr++;
   // 姿勢(見た目と食らい判定の形)を1F進める。描く回数ではなくゲームの1Fごとなので、フレームレートの設定で動きは変わらない
