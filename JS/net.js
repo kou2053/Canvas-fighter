@@ -2,12 +2,14 @@
 // net.js … オンライン対戦(ランク・カジュアル・プライベート)
 //   サーバー(リポジトリの直下の server.js)と WebSocket でつながり、2人の入力を交換して同じ試合を両方の画面で進める。
 //
-//   ■ しくみ(ロックステップ方式)
+//   ■ しくみ(ロールバック方式)
 //     ・ゲームは「入力」だけで進み方が決まる(game_spec.js の【オンライン対戦に向けた決まり】)。
 //       両方の画面で同じ種(seed)から試合を始め、毎Fの2人分の入力を同じ順番で使えば、同じ試合になる。
-//     ・自分の入力は「DELAY F 先のフレーム用」として相手へ送る(入力の遅れ)。両方の入力がそろったフレームだけ進める。
-//       相手の入力が届いていないときはそのフレームで待つ(画面に「通信待ち」)。
-//     ・遅れ(DELAY)は、つながったときに測った2人の通信の速さ(ping)から、サーバーが決めて両方に同じ値を送る。
+//     ・自分の入力は NET_LOCAL_DELAY(2)F 先のフレーム用として送る。自分の操作はほぼすぐ画面に出る。
+//     ・相手の入力がまだ届いていないフレームは「相手は前と同じキーを押し続けている」と予想して先に進める。
+//       届いたら、2人の入力がそろっている所(確定した状態)まで戻って進め直す(ロールバック)。予想が外れると、相手の動きが少しワープして見える。
+//     ・予想で進めるのは NET_MAX_PREDICT(14)F まで。それより相手が遅れているときは待つ(画面に「通信待ち」)。
+//     ・試合の結果(K.O.)は、確定した状態でしか決めない(予想の途中で勝負がついても、確定するまで待つ)。
 //     ・左(side 0)= A、右(side 1)= B。自分がどちらかはサーバーが決める。
 //     ・120F ごとに状態の要約(ハッシュ)を送り合い、ずれていたら「同期ずれ」と表示する(ブラウザの違いなどで起きうる)。
 //
@@ -19,7 +21,7 @@
 const NET_SERVER = '';                 // 空 = ゲームを開いたページと同じサーバー
 const NET_PROTO = 3;                   // 通信の決まりの版(変えたら古い版の相手とはマッチしない)
 const NET_HASH_EVERY = 120;            // 状態の要約を送る間隔(F)
-const NET_STALL_TEXT = 10;             // これ以上待ったら「通信待ち」を出す(F)
+const NET_STALL_TEXT = 6;              // これ以上待ったら「通信待ち」を出す(F)
 
 const NET = {
   on: false,          // オンライン対戦の試合中(または準備中)
@@ -54,7 +56,8 @@ function netUrl() {
 function netVersion() { return NET_PROTO + ':' + CH.map((c) => c.nm).join('|'); }
 function netSend(o) { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }
 function netReset() {
-  Object.assign(NET, { f: 0, sent: -1, inp: [new Map(), new Map()], st: [{ tp: {}, ddKeep: 0 }, { tp: {}, ddKeep: 0 }], pend: 0, stall: 0, hashes: new Map(), desync: false, oppLeft: false });
+  Object.assign(NET, { lf: 0, fc: 0, conf: null, inject: null, predicting: false, lastKnown: [0, 0], lastKnownF: -1,
+    inp: [new Map(), new Map()], st: [{ tp: {}, ddKeep: 0 }, { tp: {}, ddKeep: 0 }], pend: 0, stall: 0, hashes: new Map(), desync: false, oppLeft: false });
 }
 // オンラインのモードを始める(キャラ選択の START から)。プライベートは、まずコードの入力(作る / 入る)
 function netBegin() {
@@ -131,6 +134,7 @@ function netOnMessage(m) {
   if (m.t === 'i') {                   // 相手の入力(まとめて届く)
     const other = 1 - NET.side, M = NET.inp[other];
     for (let k = 0; k < m.w.length; k++) M.set(m.f + k, m.w[k]);
+    if (m.f + m.w.length - 1 >= (NET.lastKnownF ?? -1)) { NET.lastKnownF = m.f + m.w.length - 1; NET.lastKnown[other] = m.w[m.w.length - 1]; }
     return;
   }
   if (m.t === 'h') {                   // 相手の状態の要約
@@ -159,30 +163,71 @@ function netMatchStep() {
   }
 }
 
-// ---- 試合中: このフレームの2人の入力。そろっていなければ null(待つ) ----
-//   自分の入力は DELAY F 先のフレーム用として、まだ送っていなければ作って送る
-function netFrameInputs() {
-  const me = NET.side, D = NET.delay, mine = NET.inp[me];
+// ---- 試合中(ロールバック方式): upd から毎F呼ばれる ----
+//   1) 自分の入力を作って送る(NET_LOCAL_DELAY F 先のフレーム用)。表示するフレーム(lf)を1つ進める
+//   2) 確定した状態(conf)に戻し、2人の入力がそろったフレームを本当の入力で進めて、新しい確定の状態を覚える
+//   3) その先(まだ相手の入力が届いていない所)は、相手は「最後に届いた入力のまま押し続けている」と予想して進める
+//      → 相手の入力が届いたら、次のFで確定の状態からやり直すので、予想が外れても自動で正しい試合に直る
+//   予想で進められるのは NET_MAX_PREDICT F まで。それ以上相手が遅れたら待つ(「通信待ち」)
+const NET_LOCAL_DELAY = 2;             // 自分の入力の遅れ(F)。両方の画面で同じ値でないといけない
+const NET_MAX_PREDICT = 14;            // 予想で先に進める最大のF
+function netTick() {
+  const me = NET.side, L = NET_LOCAL_DELAY;
   const w = netLocalBits();
   NET.pend |= w & NET_HIT_MASK;                                   // 待っている間に押したボタンも、次に送る入力に入れる
-  if (NET.sent < 0) {                                             // 最初の D F は、両方とも「何も押していない」入力にする
-    for (let f = 0; f < D; f++) { NET.inp[0].set(f, 0); NET.inp[1].set(f, 0); }
-    NET.sent = D - 1;
+  if (NET.lf === 0 && !NET.conf) {                                // 最初の L F は、両方とも「何も押していない」入力
+    for (let f = 0; f < L; f++) { NET.inp[0].set(f, 0); NET.inp[1].set(f, 0); }
+    NET.conf = netSnap();
   }
-  if (NET.sent < NET.f + D) {
-    const f = NET.sent + 1, v = (w & ~NET_HIT_MASK) | NET.pend;
+  if (NET.lf - NET.fc < NET_MAX_PREDICT) {
+    const f = NET.lf + L, v = (w & ~NET_HIT_MASK) | NET.pend;
     NET.pend = 0;
-    mine.set(f, v);
+    NET.inp[me].set(f, v);
     netSend({ t: 'i', f, w: [v] });
-    NET.sent = f;
+    NET.lf++;
+    NET.stall = 0;
+  } else NET.stall++;
+  // 確定した所まで進める
+  netRestore(NET.conf);
+  let adv = false;
+  while (NET.fc < NET.lf && NET.inp[0].has(NET.fc) && NET.inp[1].has(NET.fc) && sc === 'fight') {
+    netSim(NET.inp[0].get(NET.fc), NET.inp[1].get(NET.fc));
+    const f = NET.fc++;
+    adv = true;
+    if (f % NET_HASH_EVERY === 0 && f > 0) netSendHash(f);
+    NET.inp[0].delete(f - 30); NET.inp[1].delete(f - 30);           // 古い入力は捨てる
   }
-  const a = NET.inp[0].get(NET.f), b = NET.inp[1].get(NET.f);
-  if (a == null || b == null) { NET.stall++; return null; }
-  NET.stall = 0;
-  NET.inp[0].delete(NET.f - 120); NET.inp[1].delete(NET.f - 120);   // 古い入力は捨てる
-  const fN = NET.f++;
-  if (fN % NET_HASH_EVERY === 0 && fN > 0) netSendHash(fN);
-  return [a, b];
+  if (sc !== 'fight') return;                                     // 確定した試合が終わった(結果画面へ)
+  if (adv) NET.conf = netSnap();
+  // その先は相手の入力を予想して進める(見せるだけ。次のFでやり直す)
+  NET.predicting = true;
+  try {
+    const other = 1 - me;
+    let last = NET.lastKnown[other] ?? 0;
+    for (let f = NET.fc; f < NET.lf && sc === 'fight'; f++) {
+      const known = NET.inp[other].get(f);
+      const ow = known != null ? known : last & ~NET_HIT_MASK;   // 押しっぱなしのキーは続け、押した瞬間のボタンはくり返さない
+      if (known != null) last = known;
+      const mw = NET.inp[me].get(f) ?? 0;
+      netSim(me === 0 ? mw : ow, me === 0 ? ow : mw);
+    }
+  } finally { NET.predicting = false; }
+}
+// 1F 進める(upd に入力を渡して呼ぶ)
+function netSim(a, b) {
+  NET.inject = [a, b];
+  try { upd(); } finally { NET.inject = null; }
+}
+// 試合の状態を覚える / 戻す(リプレイの場面移動と同じしくみ。replay.js の rpClone)
+function netSnap() {
+  rpStatic();
+  return rpClone({ A, B, G, fx, PJ, PT, FIRE, DUST, RAGE, ko, hs, cd, fr, gfr, RNG_S, shakeT, shakeP, MS, st: NET.st }, new Map());
+}
+function netRestore(S0) {
+  const s = rpClone(S0, new Map());
+  ({ A, B, G, fx, PJ, PT, FIRE, DUST, RAGE, ko, hs, cd, fr, gfr, RNG_S, shakeT, shakeP, MS } = s);
+  NET.st = s.st;
+  aiCache.clear();
 }
 // 自分のキーの状態をビットにする(replay.js の rpFrameInput と同じ並び。記録はしない)
 const NET_HIT_MASK = ((1 << 9) - 1) << 9 | (1 << 18);
@@ -237,7 +282,7 @@ function netDrawMatch() {
       T('VS', W / 2, 352, 22, '#fd0');
       T((P[1].name || 'PLAYER') + '(' + P[1].ch + ')' + (me === 1 ? ' ← あなた' : ''), W / 2, 384, 20, '#f99');
     }
-    if (NET.rtt) T('サーバーまで ' + Math.round(NET.rtt) + 'ms' + (NET.state === 'matched' ? '  入力の遅れ ' + NET.delay + 'F' : ''), W / 2, 440, 14, '#888');
+    if (NET.rtt) T('サーバーまで ' + Math.round(NET.rtt) + 'ms', W / 2, 440, 14, '#888');
   }
   T('Esc でキャンセル', W / 2, 480, 18, '#aaa');
 }
@@ -246,8 +291,9 @@ const MODE_NAME_NET = { rank: 'ランクマッチ', casual: 'カジュアルマ�
 function netDrawHUD() {
   if (!NET.on || sc !== 'fight') return;
   if (NET.stall > NET_STALL_TEXT) T('通信待ち…', W / 2, 300, 28, '#fd0');
+  const ahead = NET.lf - NET.fc;                                   // 予想で先に進めているF(相手の入力の届く遅さ)
   if (NET.desync) T('同期ずれが起きました(ブラウザの違いなど)。試合の結果が相手と違うかもしれません', W / 2, 124, 13, '#d33');
-  T((NET.side === 0 ? '◀ あなた' : 'あなた ▶') + '   入力の遅れ ' + NET.delay + 'F', W / 2, 104, 12, '#556', 'center');
+  T((NET.side === 0 ? '◀ あなた' : 'あなた ▶') + '   入力の遅れ ' + NET_LOCAL_DELAY + 'F / 予想 ' + ahead + 'F', W / 2, 104, 12, '#556', 'center');
 }
 
 // ---- メニューの操作(nav から) ----
