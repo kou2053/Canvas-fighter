@@ -5,9 +5,11 @@
 //   ■ しくみ(ロールバック方式)
 //     ・ゲームは「入力」だけで進み方が決まる(game_spec.js の【オンライン対戦に向けた決まり】)。
 //       両方の画面で同じ種(seed)から試合を始め、毎Fの2人分の入力を同じ順番で使えば、同じ試合になる。
-//     ・自分の入力は NET_LOCAL_DELAY(2)F 先のフレーム用として送る。自分の操作はほぼすぐ画面に出る。
+//     ・自分の入力は NET.delay F 先のフレーム用として送る。NET.delay は通信の速さから自動で決める(2〜5F)。
+//       相手の入力が「使う時」までに届きやすくなるので、予想が外れる(ワープする)ことが減る。
 //     ・相手の入力がまだ届いていないフレームは「相手は前と同じキーを押し続けている」と予想して先に進める。
-//       届いたら、2人の入力がそろっている所(確定した状態)まで戻って進め直す(ロールバック)。予想が外れると、相手の動きが少しワープして見える。
+//       届いたら、2人の入力がそろっている所(確定した状態)まで戻って進め直す(ロールバック)。
+//       予想が外れて位置がずれたときは、見た目だけ数Fかけて正しい位置へなめらかに寄せる(netVisApply。試合の計算には使わない)。
 //     ・予想で進めるのは NET_MAX_PREDICT(14)F まで。それより相手が遅れているときは待つ(画面に「通信待ち」)。
 //     ・試合の結果(K.O.)は、確定した状態でしか決めない(予想の途中で勝負がついても、確定するまで待つ)。
 //     ・左(side 0)= A、右(side 1)= B。自分がどちらかはサーバーが決める。
@@ -30,7 +32,8 @@ const NET = {
   msg: '',            // 画面に出す説明
   code: '',           // プライベートのルームコード
   side: 0,            // 0 = 左(A) / 1 = 右(B)
-  delay: 4,           // 入力の遅れ(F)
+  delay: 2,           // 入力の遅れ(F)。試合が始まるときに通信の速さから決める
+  vis: { off: [0, 0, 0, 0, 0, 0, 0, 0], pos: new Map(), lastF: -1, saved: null },   // 見た目のずれをなめらかにする(netVisApply)
   seed: 1,
   players: null,      // [左の情報, 右の情報] { ch, sk, name, rp, st }
   f: 0,               // 次に進めるフレーム番号
@@ -57,6 +60,7 @@ function netVersion() { return NET_PROTO + ':' + CH.map((c) => c.nm).join('|'); 
 function netSend(o) { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }
 function netReset() {
   Object.assign(NET, { lf: 0, fc: 0, conf: null, inject: null, predicting: false, lastKnown: [0, 0], lastKnownF: -1,
+    vis: { off: [0, 0, 0, 0, 0, 0, 0, 0], pos: new Map(), lastF: -1, saved: null },
     inp: [new Map(), new Map()], st: [{ tp: {}, ddKeep: 0 }, { tp: {}, ddKeep: 0 }], pend: 0, stall: 0, hashes: new Map(), desync: false, oppLeft: false });
 }
 // オンラインのモードを始める(キャラ選択の START から)。プライベートは、まずコードの入力(作る / 入る)
@@ -122,7 +126,9 @@ function netOnMessage(m) {
   if (m.t === 'err') return netError(m.msg || 'エラー');
   if (m.t === 'start') {
     NET.side = m.side;
-    NET.delay = m.delay;
+    // サーバーが2人の通信の速さから計算した値(相手の入力が届くまでのF + 1)を少し減らして使う。
+    //   全部を遅れでかくすと操作が重くなるので、残りは予想とロールバックでかくす。両方の画面で同じ値になる
+    NET.delay = Math.max(NET_LOCAL_DELAY, Math.min(NET_MAX_DELAY, (m.delay | 0) - 2));
     NET.seed = m.seed >>> 0;
     NET.players = m.p;
     NET.state = 'matched';
@@ -164,15 +170,18 @@ function netMatchStep() {
 }
 
 // ---- 試合中(ロールバック方式): upd から毎F呼ばれる ----
-//   1) 自分の入力を作って送る(NET_LOCAL_DELAY F 先のフレーム用)。表示するフレーム(lf)を1つ進める
+//   1) 自分の入力を作って送る(NET.delay F 先のフレーム用)。表示するフレーム(lf)を1つ進める
 //   2) 確定した状態(conf)に戻し、2人の入力がそろったフレームを本当の入力で進めて、新しい確定の状態を覚える
 //   3) その先(まだ相手の入力が届いていない所)は、相手は「最後に届いた入力のまま押し続けている」と予想して進める
 //      → 相手の入力が届いたら、次のFで確定の状態からやり直すので、予想が外れても自動で正しい試合に直る
 //   予想で進められるのは NET_MAX_PREDICT F まで。それ以上相手が遅れたら待つ(「通信待ち」)
-const NET_LOCAL_DELAY = 2;             // 自分の入力の遅れ(F)。両方の画面で同じ値でないといけない
+const NET_LOCAL_DELAY = 2;             // 入力の遅れの最小(F)
+const NET_MAX_DELAY = 5;               // 入力の遅れの最大(F)。これ以上は操作が重く感じるので、残りは予想でかくす
 const NET_MAX_PREDICT = 14;            // 予想で先に進める最大のF
 function netTick() {
-  const me = NET.side, L = NET_LOCAL_DELAY;
+  const me = NET.side, L = NET.delay;
+  const V = NET.vis, oldPos = V.pos;
+  V.pos = new Map();
   const w = netLocalBits();
   NET.pend |= w & NET_HIT_MASK;                                   // 待っている間に押したボタンも、次に送る入力に入れる
   if (NET.lf === 0 && !NET.conf) {                                // 最初の L F は、両方とも「何も押していない」入力
@@ -193,6 +202,7 @@ function netTick() {
   while (NET.fc < NET.lf && NET.inp[0].has(NET.fc) && NET.inp[1].has(NET.fc) && sc === 'fight') {
     netSim(NET.inp[0].get(NET.fc), NET.inp[1].get(NET.fc));
     const f = NET.fc++;
+    netVisRec(f);
     adv = true;
     if (f % NET_HASH_EVERY === 0 && f > 0) netSendHash(f);
     NET.inp[0].delete(f - 30); NET.inp[1].delete(f - 30);           // 古い入力は捨てる
@@ -210,8 +220,51 @@ function netTick() {
       if (known != null) last = known;
       const mw = NET.inp[me].get(f) ?? 0;
       netSim(me === 0 ? mw : ow, me === 0 ? ow : mw);
+      netVisRec(f);
     }
   } finally { NET.predicting = false; }
+  netVisFix(oldPos);
+}
+// ---- 見た目のずれをなめらかにする ----
+//   前のFに画面に出した位置と、やり直した後の同じフレームの位置を比べて、その差を「見た目のずれ」にためる。
+//   描くときだけ、ずれの分だけ前の位置寄りに描き、ずれは毎F少しずつ 0 に戻す(瞬間移動に見えない)
+const NET_VIS_KEEP = 0.72;             // 毎F残すずれの割合(小さいほど早く正しい位置へ)
+const NET_VIS_MAX = 140;               // これより大きいずれはなめらかにしない(ラウンドの始まりなど)
+function netVisRec(f) {
+  const q = (p) => (p && p.pup ? [p.pup.x, p.pup.y] : [0, 0]);
+  NET.vis.pos.set(f, [A.x, A.y, B.x, B.y, ...q(A), ...q(B)]);
+}
+function netVisFix(oldPos) {
+  const V = NET.vis, o = V.off, f = V.lastF, a = oldPos.get(f), b = V.pos.get(f);
+  for (let i = 0; i < 8; i++) o[i] *= NET_VIS_KEEP;
+  if (a && b) for (let i = 0; i < 8; i++) {
+    const d = a[i] - b[i];
+    if (Math.abs(d) > 0.01 && Math.abs(d) < NET_VIS_MAX) o[i] += d;
+  }
+  for (let i = 0; i < 8; i++) if (Math.abs(o[i]) < 0.05 || Math.abs(o[i]) > NET_VIS_MAX) o[i] = 0;
+  V.lastF = NET.lf - 1;
+  // 次に比べられるように、画面に出すフレームの位置だけ残す
+  const keep = V.pos.get(V.lastF);
+  V.pos = new Map(keep ? [[V.lastF, keep]] : []);
+}
+// 描く前にずれを足す / 描いた後に戻す(loop の draw の前後)
+function netVisApply() {
+  const V = NET.vis;
+  V.saved = null;
+  if (!NET.on || sc !== 'fight' || !A || !B) return;
+  const o = V.off;
+  V.saved = [A.x, A.y, B.x, B.y, A.pup && A.pup.x, A.pup && A.pup.y, B.pup && B.pup.x, B.pup && B.pup.y];
+  A.x += o[0]; A.y += o[1]; B.x += o[2]; B.y += o[3];
+  if (A.pup) { A.pup.x += o[4]; A.pup.y += o[5]; }
+  if (B.pup) { B.pup.x += o[6]; B.pup.y += o[7]; }
+}
+function netVisRevert() {
+  const s = NET.vis.saved;
+  if (!s) return;
+  NET.vis.saved = null;
+  [A.x, A.y, B.x, B.y] = s;
+  if (A.pup) { A.pup.x = s[4]; A.pup.y = s[5]; }
+  if (B.pup) { B.pup.x = s[6]; B.pup.y = s[7]; }
 }
 // 1F 進める(upd に入力を渡して呼ぶ)
 function netSim(a, b) {
@@ -293,7 +346,7 @@ function netDrawHUD() {
   if (NET.stall > NET_STALL_TEXT) T('通信待ち…', W / 2, 300, 28, '#fd0');
   const ahead = NET.lf - NET.fc;                                   // 予想で先に進めているF(相手の入力の届く遅さ)
   if (NET.desync) T('同期ずれが起きました(ブラウザの違いなど)。試合の結果が相手と違うかもしれません', W / 2, 124, 13, '#d33');
-  T((NET.side === 0 ? '◀ あなた' : 'あなた ▶') + '   入力の遅れ ' + NET_LOCAL_DELAY + 'F / 予想 ' + ahead + 'F', W / 2, 104, 12, '#556', 'center');
+  T((NET.side === 0 ? '◀ あなた' : 'あなた ▶') + '   入力の遅れ ' + NET.delay + 'F / 予想 ' + ahead + 'F', W / 2, 104, 12, '#556', 'center');
 }
 
 // ---- メニューの操作(nav から) ----
