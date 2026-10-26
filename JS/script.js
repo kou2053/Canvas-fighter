@@ -69,7 +69,7 @@ const DEFAULT_KEYS = {
   airParry: ['KeyX'],
   self: ['KeyS'],
 };
-const DEFAULT_CFG = { easyCmd: false, shake: true, help: true, quality: 'high', fps: 60 }; // 簡単コマンド / ヒット時の画面の揺れ / 操作説明の表示 / 画質(QUALITY) / フレームレート(FPS_LIST)
+const DEFAULT_CFG = { easyCmd: false, shake: true, help: true, quality: 'high', fps: 60, netDelay: 0 }; // 簡単コマンド / ヒット時の画面の揺れ / 操作説明の表示 / 画質(QUALITY) / フレームレート(FPS_LIST) / オンラインの入力の遅れ(0 = 自動、1〜6F。net.js)
 const RESERVED_KEYS = ['Escape']; // メニューに戻るキーは割り当てられない
 function loadSettings() {
   const k = save.keys || {};
@@ -2726,8 +2726,8 @@ function nav(k) {
       }
     }
   } else if (sc === 'set') {
-    // 設定画面: キー配置(9行) / 簡単コマンド / 画面の揺れ / 操作説明 / 画質 / フレームレート / 初期値に戻す / 戻る
-    const n = KEY_ACTIONS.length + 7;
+    // 設定画面: キー配置 / 簡単コマンド / 画面の揺れ / 操作説明 / 画質 / フレームレート / オンラインの入力の遅れ / 初期値に戻す / 戻る
+    const n = KEY_ACTIONS.length + 8;
     L(n);
     if (sel < KEY_ACTIONS.length && (lf || rt)) setSlot = rt ? 1 : 0;
     if (esc) {
@@ -2759,14 +2759,18 @@ function nav(k) {
         save.cfg.fps = ids[(i + (lf ? -1 : 1) + ids.length) % ids.length];
         sv();
       }
-      if (r === 5 && ok) {
+      if (r === 5 && (ok || lf || rt)) {                 // オンラインの入力の遅れ: 自動 → 1F → … → 6F
+        save.cfg.netDelay = ((save.cfg.netDelay | 0) + (lf ? 6 : 1)) % 7;
+        sv();
+      }
+      if (r === 6 && ok) {
         save.keys = {};
         save.cfg = {};
         loadSettings();
         sv();
         msg = '初期値に戻しました';
       }
-      if (r === 6 && ok) {
+      if (r === 7 && ok) {
         sc = 'main';
         sel = MN.length - 1;
       }
@@ -3437,6 +3441,7 @@ function draw() {
       '対戦中の操作説明: ' + (save.cfg.help ? 'ON' : 'OFF'),
       '画質: ◀ ' + qualityOf()[1] + ' ▶',
       'フレームレート: ◀ ' + fpsOf()[1] + ' ▶',
+      'オンラインの入力の遅れ: ◀ ' + (save.cfg.netDelay ? save.cfg.netDelay + 'F' : '自動') + ' ▶ (少=操作が速い/多=ワープしにくい)',
       '初期値に戻す',
       '戻る',
     ];
