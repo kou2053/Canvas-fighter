@@ -5,7 +5,8 @@
 //   ■ しくみ(ロールバック方式)
 //     ・ゲームは「入力」だけで進み方が決まる(game_spec.js の【オンライン対戦に向けた決まり】)。
 //       両方の画面で同じ種(seed)から試合を始め、毎Fの2人分の入力を同じ順番で使えば、同じ試合になる。
-//     ・自分の入力は NET.delay F 先のフレーム用として送る。NET.delay は通信の速さから自動で決める(2〜5F)。
+//     ・自分の入力は NET.delay F 先のフレーム用として送る。NET.delay は通信の速さから自動で決める(2〜4F)か、設定画面で 1〜6F を選ぶ。
+//       2人の値が違ってもよい(最初の NET.delay F 分の「何も押していない」入力は、それぞれが自分の分を送る)。
 //       相手の入力が「使う時」までに届きやすくなるので、予想が外れる(ワープする)ことが減る。
 //     ・相手の入力がまだ届いていないフレームは「相手は前と同じキーを押し続けている」と予想して先に進める。
 //       届いたら、2人の入力がそろっている所(確定した状態)まで戻って進め直す(ロールバック)。
@@ -81,12 +82,14 @@ function netConnect() {
   NET.ws = ws;
   ws.onopen = () => {
     NET.msg = '通信の速さを測っています…';
-    let n = 0, sum = 0;
+    let n = 0;
+    const ts = [];
     const ping = () => { NET.pingT[n] = performance.now(); netSend({ t: 'ping', c: n }); };
     NET.onPong = (c) => {
-      sum += performance.now() - NET.pingT[c];
-      if (++n < 3) return ping();
-      NET.rtt = sum / n;
+      ts.push(performance.now() - NET.pingT[c]);
+      if (++n < 5) return ping();
+      ts.sort((a, b) => a - b);
+      NET.rtt = (ts[0] + ts[1] + ts[2]) / 3;           // 遅かった2回は除く(一時的なゆれで入力の遅れが増えないように)
       NET.onPong = null;
       netJoin();
     };
@@ -128,7 +131,9 @@ function netOnMessage(m) {
     NET.side = m.side;
     // サーバーが2人の通信の速さから計算した値(相手の入力が届くまでのF + 1)を少し減らして使う。
     //   全部を遅れでかくすと操作が重くなるので、残りは予想とロールバックでかくす。両方の画面で同じ値になる
-    NET.delay = Math.max(NET_LOCAL_DELAY, Math.min(NET_MAX_DELAY, (m.delay | 0) - 2));
+    //   設定画面で 1〜6F を選んでいたらその値。それぞれのプレイヤーが別の値でもよい(自分の入力の遅れは自分で決める)
+    const man = save.cfg && save.cfg.netDelay | 0;
+    NET.delay = man ? Math.max(1, Math.min(6, man)) : Math.max(NET_LOCAL_DELAY, Math.min(NET_MAX_DELAY, (m.delay | 0) - 3));
     NET.seed = m.seed >>> 0;
     NET.players = m.p;
     NET.state = 'matched';
@@ -176,7 +181,7 @@ function netMatchStep() {
 //      → 相手の入力が届いたら、次のFで確定の状態からやり直すので、予想が外れても自動で正しい試合に直る
 //   予想で進められるのは NET_MAX_PREDICT F まで。それ以上相手が遅れたら待つ(「通信待ち」)
 const NET_LOCAL_DELAY = 2;             // 入力の遅れの最小(F)
-const NET_MAX_DELAY = 5;               // 入力の遅れの最大(F)。これ以上は操作が重く感じるので、残りは予想でかくす
+const NET_MAX_DELAY = 4;               // 入力の遅れの最大(F)。これ以上は操作が重く感じるので、残りは予想でかくす
 const NET_MAX_PREDICT = 14;            // 予想で先に進める最大のF
 function netTick() {
   const me = NET.side, L = NET.delay;
@@ -184,8 +189,10 @@ function netTick() {
   V.pos = new Map();
   const w = netLocalBits();
   NET.pend |= w & NET_HIT_MASK;                                   // 待っている間に押したボタンも、次に送る入力に入れる
-  if (NET.lf === 0 && !NET.conf) {                                // 最初の L F は、両方とも「何も押していない」入力
-    for (let f = 0; f < L; f++) { NET.inp[0].set(f, 0); NET.inp[1].set(f, 0); }
+  if (NET.lf === 0 && !NET.conf) {                                // 最初の L F は「何も押していない」入力(相手の分は相手が送ってくる)
+    const z = [];
+    for (let f = 0; f < L; f++) { NET.inp[me].set(f, 0); z.push(0); }
+    if (z.length) netSend({ t: 'i', f: 0, w: z });
     NET.conf = netSnap();
   }
   if (NET.lf - NET.fc < NET_MAX_PREDICT) {
