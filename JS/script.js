@@ -3708,7 +3708,8 @@ function loop(t) {
     g.imageSmoothingEnabled = true;
     inDraw = true;                                   // 描く間は見た目用の乱数(ゲームの乱数を減らさない)
     if (typeof uiFrameStart === 'function') uiFrameStart(); // クリックできる場所の登録を作り直す(ui.js)
-    try { draw(); if (typeof pfOverlay === 'function') pfOverlay(); } finally { inDraw = false; } // pfOverlay: 実績解除の通知(profile.js)
+    if (NET.on) netVisApply();                       // オンライン: 予想が外れた位置のずれを、見た目だけなめらかに(net.js)
+    try { draw(); if (typeof pfOverlay === 'function') pfOverlay(); } finally { inDraw = false; if (NET.on) netVisRevert(); } // pfOverlay: 実績解除の通知(profile.js)
   }
   requestAnimationFrame(loop);
 }
