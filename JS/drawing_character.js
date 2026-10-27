@@ -1537,6 +1537,495 @@ const CHARACTER_DRAWS = {
 
   },
 
+  // ============================================================
+  //  新しい5人の見た目
+  // ============================================================
+  // ハヤテ(疾風) … 風の舞い手の青年。青緑の高いポニーテール、白い長いマフラー、深緑の袖なし羽織に生成りの袴、
+  //   腰に長くなびく帯。手には鉄扇(開くと半円。疾風突きのときは閉じる)
+  'ハヤテ': {
+    body: {
+      scale: 0.95,
+      headRadius: 12.5,
+      handRadius: 7,
+      torsoLength: 35,
+      torsoWidth: 17,
+      upperArm: { length: 24, width: 7.5 },
+      lowerArm: { length: 23, width: 7, wrap: { color: '#eef8f2', stripe: '#9cc8b8', from: 0.5, to: 0.95, count: 3 } },   // 手首に白い布を巻く
+      thighLength: 25,
+      shinLength: 25,
+      legWidth: 11,
+      thighWidth: 12,
+      shinWidth: 9,
+      pantsColor: '#e8e2cc',
+      beltColor: '#2f8a72',
+      buckleColor: false,
+      sleeves: false,
+      foreArmColor: '#f4d2b0',
+      handColor: '#f4d2b0',
+      shoesColor: '#6a4a2a',
+      top: { type: 'vest', color: '#2f7a66', inner: '#eef8f2', buttons: 0 },
+      bottom: { type: 'wide', color: '#e8e2cc', flare: 1.7 },
+      torsoType: 'slim',
+      armType: 'standard',
+      armBand: null,
+      hand: 'normal',
+      handOutline: true,
+      shoeLegCover: false,
+      legPatch: false,
+      armDecoration: false,
+    },
+    headShape: 'standard',
+    hair: [
+      { type: 'ponytail', color: '#2f6f68', length: 0.95, y: -0.75, volume: 6, tie: '#eef8f2', back: 1 },
+      { type: 'bangs', style: 'side', color: '#2f6f68', length: 0.45, sideburn: 0.55, partY: 0.2 },
+    ],
+    headgear: [],
+    faceDeco: [{ type: 'line', from: [0.42, 0.18], to: [0.62, 0.3], w: 1.6, color: '#2f9a80' }],   // 目の下の風のしるし
+    clothes: [{ type: 'scarf', color: '#f4fbf8', color2: '#cfeee2', length: 54, flutter: 1.6 }],
+    nose: 'small',
+    eyes: { type: 'sharp', x: 0.6, y: -0.05, size: 1, width: 1.05, height: 0.9 },
+    brows: { type: 'straight', thickness: 2, color: '#1f4f48' },
+    mouth: { closed: 'smirk', open: 'oval', x: 0.6, y: 0.55, size: 0.85 },
+    moveDust: { color: '#bff5e6', color2: '#ffffff', rate: 0.45, size: 0.8, life: 26, from: 0.3, to: 0.9, behind: 18 },
+    weaponGrip: { angle: 80, aim: true },
+    palette: { fan: '#4fbfa0', fan2: '#eefff8', rib: '#3a2a1a', sash: '#2f8a72' },
+
+    // 胸: 羽織の合わせ目の白い紐
+    torso(ctx) {
+      const { P, hw } = ctx, c = PAL(ctx, 'cord', '#eef8f2');
+      ctx.line(P(0.55, hw * 0.75), P(0.5, hw * 1.0), 2, ctx.C(c));
+      ctx.dot(...P(0.5, hw * 1.0), 2.2, ctx.C(c));
+    },
+    // 腰の帯: 長い2本の垂れが風になびく
+    waist(ctx, b, tr, wv) {
+      const col = PAL(ctx, 'sash', '#2f8a72');
+      [[-16, 22, 0], [-10, 30, -0.18]].forEach(([dx, dy, dim], k) => {
+        const pts = ctx.strand('hsash' + k, b, { len: Math.hypot(dx, dy) * 1.15, n: 5, dir: [dx, dy], stiff: [0.25, 0.01], damp: 0.06, flutter: 1.3, seed: k * 1.7 + 0.4, collide: 'back', r: 2 });
+        strandRibbon(ctx, pts, 4.5, 3.2, ctx.K(col, dim), true);
+      });
+    },
+    // 鉄扇: こぶしを要(かなめ)に、技の方向へ半円に開く(疾風突き・空舞いの間は閉じて1本の棒)
+    weapon(ctx, e, ux, uy) {
+      const { g } = ctx, p = ctx.p, closed = p && p.st === 'atk' && p.mv && /^(da|c2)$/.test(p.mv.k);
+      const fan = PAL(ctx, 'fan', '#4fbfa0'), fan2 = PAL(ctx, 'fan2', '#eefff8'), rib = PAL(ctx, 'rib', '#3a2a1a');
+      const a0 = Math.atan2(uy, ux), R = 30, span = closed ? 0.12 : 1.55;
+      if (closed) {
+        const t = [e[0] + ux * R, e[1] + uy * R];
+        ctx.line(e, t, 7, '#111');
+        ctx.line(e, t, 5, ctx.K(rib, 0.1));
+        ctx.line([e[0] + ux * 8, e[1] + uy * 8], t, 2, ctx.C(fan));
+        ctx.dot(e[0], e[1], 2.6, ctx.C('#d8b060'));
+        return;
+      }
+      const s0 = a0 - span / 2, s1 = a0 + span / 2;
+      g.beginPath();
+      g.moveTo(e[0] + Math.cos(s0) * 8, e[1] + Math.sin(s0) * 8);
+      g.arc(e[0], e[1], R, s0, s1);
+      g.lineTo(e[0] + Math.cos(s1) * 8, e[1] + Math.sin(s1) * 8);
+      g.arc(e[0], e[1], 8, s1, s0, true);
+      g.closePath();
+      const gr = g.createRadialGradient(e[0], e[1], 6, e[0], e[1], R);
+      gr.addColorStop(0, ctx.K(fan2, 0));
+      gr.addColorStop(0.55, ctx.K(fan, 0.2));
+      gr.addColorStop(1, ctx.K(fan, -0.1));
+      g.fillStyle = gr;
+      g.fill();
+      ctx.ol(1.8);
+      g.lineWidth = 1;
+      g.strokeStyle = 'rgba(30,40,30,.45)';
+      for (let i = 1; i < 7; i++) {                                         // 骨(リブ)
+        const a = s0 + (span * i) / 7;
+        g.beginPath(); g.moveTo(e[0] + Math.cos(a) * 8, e[1] + Math.sin(a) * 8); g.lineTo(e[0] + Math.cos(a) * R, e[1] + Math.sin(a) * R); g.stroke();
+      }
+      g.strokeStyle = ctx.C(fan2);                                          // 風の模様(渦)
+      g.lineWidth = 1.4;
+      g.beginPath(); g.arc(e[0] + Math.cos(a0) * R * 0.66, e[1] + Math.sin(a0) * R * 0.66, 5, a0, a0 + 4.2); g.stroke();
+      ctx.dot(e[0], e[1], 2.8, '#111');
+      ctx.dot(e[0], e[1], 2, ctx.C('#d8b060'));
+    },
+  },
+
+  // セツカ(雪華) … 氷の槍使いの女性。銀白の姫カット(まっすぐな前髪・切りそろえた長い髪)、氷の結晶のティアラ、
+  //   白い毛皮の襟と、薄青の長い外套。手には透きとおった氷の槍
+  'セツカ': {
+    body: {
+      scale: 0.82,
+      headRadius: 13,
+      handRadius: 6,
+      torsoLength: 40,
+      torsoWidth: 13,
+      upperArm: { length: 25, width: 6.5 },
+      lowerArm: { length: 24, width: 6 },
+      thighLength: 34,
+      shinLength: 38,
+      legWidth: 8.5,
+      thighWidth: 9,
+      shinWidth: 6.5,
+      pantsColor: '#cfe2f6',
+      beltColor: '#5ab8ff',
+      buckleColor: '#ffffff',
+      sleeves: true,
+      foreArmColor: '#d8ecff',
+      handColor: '#eef6ff',
+      shoesColor: '#6aa8e0',
+      armType: 'longSleeve',
+      torsoType: 'hourglass',
+      armBand: null,
+      hand: 'normal',
+      handOutline: false,
+      shoeLegCover: true,
+      legPatch: false,
+      armDecoration: false,
+    },
+    headShape: 'elegant',
+    hair: [
+      { type: 'long', color: '#eaf2ff', length: 1.15, volume: 8, wave: 0.05, tip: 'flat' },
+      { type: 'bangs', style: 'straight', color: '#eaf2ff', length: 0.55, sideburn: 1.1 },
+    ],
+    headgear: [{ type: 'crown', color: '#bfefff', width: 0.75, height: 0.7, gem: '#5ad8ff' }],
+    faceDeco: [],
+    clothes: [
+      { type: 'robe', color: '#d8ecff', trim: '#5ab8ff', length: 0.86, flare: 12 },
+    ],
+    nose: 'girl',
+    eyes: { type: 'anime', color: '#4aa8f0', x: 0.6, y: 0.1, size: 1.0, width: 1.05, height: 0.78 },   // 切れ長の青い目
+    brows: { type: 'straight', thickness: 1.4, color: '#9ab0c8', width: 0.9 },
+    mouth: { closed: 'flat', open: 'o', x: 0.6, y: 0.58, size: 0.7, width: 0.45, lineWidth: 1, color: '#6a3a4a' },
+    moveDust: { color: '#e8fbff', color2: '#9fe6ff', rate: 0.4, size: 0.75, life: 34, from: 0.6, to: 1, behind: 10 },
+    weaponGrip: { angle: 90, aim: true },
+    palette: { fur: '#f6faff', coat: '#d8ecff', clasp: '#5ad8ff', shaft: '#e8f6ff', blade: '#9fe6ff', blade2: '#ffffff' },
+
+    // 胸: 氷の結晶の留め具と、白い毛皮の襟
+    torso(ctx) {
+      const { P, hw, g } = ctx, cl = PAL(ctx, 'clasp', '#5ad8ff');
+      ctx.line(P(0.1, hw * 0.98), P(0.85, hw * 0.98), 1.6, ctx.C(PAL(ctx, 'coatLine', '#9cc8f0')));
+      const c = P(0.7, hw * 0.85);
+      g.fillStyle = ctx.C(cl);
+      g.beginPath();
+      for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, r = i % 2 ? 2.4 : 5.4; g.lineTo(c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r); }
+      g.closePath(); g.fill(); ctx.ol(1.1);
+      ctx.dot(c[0] - 1, c[1] - 1, 1, '#fff');
+    },
+    extraCollar(ctx) { furCollar(ctx, PAL(ctx, 'fur', '#f6faff')); },
+    // 氷の槍: 白い柄・結晶のつば・透きとおった長い穂先
+    weapon(ctx, e, ux, uy) {
+      const { g } = ctx, px = -uy, py = ux, A = (d, s = 0) => [e[0] + ux * d + px * s, e[1] + uy * d + py * s];
+      const sh = PAL(ctx, 'shaft', '#e8f6ff'), bl = PAL(ctx, 'blade', '#9fe6ff'), bl2 = PAL(ctx, 'blade2', '#ffffff');
+      ctx.line(A(-34), A(46), 5.5, '#111');
+      ctx.line(A(-34), A(46), 3.6, ctx.K(sh, 0));
+      for (const d of [-26, -12, 8, 24]) ctx.line(A(d - 1, -2), A(d + 1, 2), 1.3, ctx.C(bl));   // 柄に巻いた青いひも
+      ctx.poly([A(44, -6), A(50, 0), A(44, 6), A(40, 0)]);                  // つば(結晶)
+      g.fillStyle = ctx.C(bl); g.fill(); ctx.ol(1.2);
+      ctx.poly([A(48, -4.5), A(78, -1.5), A(88, 0), A(78, 1.5), A(48, 4.5)]);   // 穂先(透きとおった氷)
+      g.globalAlpha = 0.85;
+      g.fillStyle = ctx.LG(...A(48), ...A(88), ctx.K(bl, -0.05), ctx.K(bl2, 0));
+      g.fill();
+      g.globalAlpha = 1;
+      ctx.ol(1.4);
+      ctx.line(A(52, 0), A(82, 0), 1, 'rgba(255,255,255,.85)');
+      ctx.dot(...A(-35), 3, '#111');
+      ctx.dot(...A(-35), 2.2, ctx.C(bl));
+    },
+  },
+
+  // シゲル(茂) … 森の子の少年。もじゃっとした苔色の髪の上に双葉の芽、葉っぱのフードのパーカー、茶色の半ズボン、
+  //   腕に巻きついたつる、背中に葉を重ねた小さなマント
+  'シゲル': {
+    body: {
+      scale: 0.9,
+      headRadius: 14,
+      handRadius: 8,
+      torsoLength: 33,
+      torsoWidth: 21,
+      upperArm: { length: 22, width: 9.5 },
+      lowerArm: { length: 21, width: 9, wrap: { color: '#3a8a2a', stripe: '#2a6a1a', from: 0.1, to: 0.9, count: 5 } },   // 腕に巻きついたつる
+      thighLength: 20,
+      shinLength: 21,
+      legWidth: 12,
+      thighWidth: 13,
+      shinWidth: 10,
+      pantsColor: '#f0cfa8',
+      beltColor: '#7a5a3a',
+      buckleColor: '#c8e07a',
+      sleeves: true,
+      foreArmColor: '#f0cfa8',
+      handColor: '#f0cfa8',
+      shoesColor: '#6a4a2a',
+      top: { type: 'hoodie', color: '#5aa83a', strings: '#e8d8a0', pocket: true },
+      bottom: { type: 'shorts', color: '#8a6a40', hem: 0.62 },
+      torsoType: 'barrel',
+      armType: 'shortSleeve',
+      armBand: null,
+      hand: 'normal',
+      handOutline: true,
+      shoeLegCover: true,
+      legPatch: false,
+      armDecoration: false,
+    },
+    headShape: 'round',
+    hair: [
+      { type: 'bangs', style: 'center', color: '#5a7a2a', length: 0.3, sideburn: 0.4, part: 0.4 },
+    ],
+    headgear: [],
+    faceDeco: [{ type: 'blush', x: 0.4, y: 0.4, r: 0.16, color: '#f8a888' }, { type: 'dot', x: 0.5, y: 0.32, r: 1.1, color: '#c8865a' }, { type: 'dot', x: 0.38, y: 0.38, r: 1.1, color: '#c8865a' }],   // ほっぺとそばかす
+    clothes: [],
+    nose: 'round',
+    eyes: { type: 'anime', color: '#3aa83a', x: 0.6, y: 0.08, size: 1.15, width: 1.05, height: 1.05 },
+    brows: { type: 'maro', color: '#3a5a1a' },
+    mouth: { closed: 'smile', open: 'laugh', x: 0.6, y: 0.56, size: 0.9 },
+    moveDust: { color: '#9adf6a', color2: '#f0ffb0', rate: 0.3, size: 0.8, life: 30, from: 0.1, to: 0.5, behind: 6 },
+    palette: { sprout: '#7ad04a', sprout2: '#4a9a2a', cape: '#5ab83a', cape2: '#3a8a2a', flower: null },
+
+    // 頭の上の双葉(芽)。動くと揺れる
+    headFront(ctx) {
+      const { g, hcx, hcy, Rh } = ctx, c1 = PAL(ctx, 'sprout', '#7ad04a'), c2 = PAL(ctx, 'sprout2', '#4a9a2a'), fl = PAL(ctx, 'flower', null);
+      const J = ctx.jiggle ? ctx.jiggle('sprout', [hcx, hcy - Rh], { k: 0.2, damp: 0.2, max: 7 }) : [0, 0];
+      const b = [hcx - Rh * 0.1, hcy - Rh * 0.92], t = [b[0] + J[0] * 0.6, b[1] - 9 + J[1] * 0.4];
+      ctx.line(b, t, 3.4, '#111');
+      ctx.line(b, t, 2.2, ctx.C(c2));
+      for (const s of [-1, 1]) {
+        g.save(); g.translate(t[0], t[1]); g.rotate(s * 0.75 + J[0] * 0.03);
+        g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(s * 5, -9, s * 13, -4); g.quadraticCurveTo(s * 6, 2, 0, 0);
+        g.fillStyle = ctx.C(c1); g.fill(); ctx.ol(1.4);
+        g.restore();
+      }
+      if (fl) { ctx.dot(t[0], t[1] - 2, 4.2, '#111'); ctx.dot(t[0], t[1] - 2, 3.4, ctx.C(fl)); ctx.dot(t[0], t[1] - 2, 1.4, '#fff6a0'); }
+    },
+    // 背中の葉のマント(葉を3段に重ねる)
+    back(ctx) {
+      const { P, hw, g } = ctx, c1 = PAL(ctx, 'cape', '#5ab83a'), c2 = PAL(ctx, 'cape2', '#3a8a2a');
+      if (!c1) return;
+      for (let row = 0; row < 3; row++) for (let i = 0; i < 3; i++) {
+        const c = P(0.95 - row * 0.3, -hw * (0.6 + i * 0.25)), s = 9 - row;
+        g.save(); g.translate(c[0], c[1]); g.rotate(Math.atan2(ctx.ls || 0, ctx.lc ?? 1) + 2.4 - i * 0.25);
+        g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-s * 0.7, s, 0, s * 2.2); g.quadraticCurveTo(s * 0.7, s, 0, 0);
+        g.fillStyle = ctx.K((row + i) % 2 ? c1 : c2, 0); g.fill(); ctx.ol(1.4);
+        g.restore();
+      }
+    },
+  },
+
+  // ギア(GEAR) … 鋼の機兵。丸い装甲の頭と光る横長のバイザー・アンテナ、胸の炉心(熱がたまると赤く光る)、
+  //   肩のミサイルポッド、背中の2本のスラスター(ダッシュ・噴射技のときに炎)、四角い手
+  'ギア': {
+    body: {
+      scale: 1.06,
+      headRadius: 13,
+      handRadius: 8,
+      torsoLength: 36,
+      torsoWidth: 30,
+      upperArm: { length: 24, width: 14 },
+      lowerArm: { length: 24, width: 14, band: { color: '#e03a3a', from: 0.7, to: 0.8, pad: 1.4 } },
+      thighLength: 20,
+      shinLength: 21,
+      legWidth: 16,
+      thighWidth: 15,
+      shinWidth: 18,
+      pantsColor: '#5a6470',
+      beltColor: '#3a4048',
+      buckleColor: '#ffb040',
+      sleeves: true,
+      foreArmColor: '#c8d0da',
+      handColor: '#8a96a4',
+      shoesColor: '#3a4048',
+      top: { type: 'armor', color: '#7a8694', plate: '#d8dee6', rivet: '#e03a3a' },
+      bottom: { type: 'greaves', color: '#5a6470', greave: '#c8d0da' },
+      torsoType: 'blocky',
+      armType: 'standard',
+      elbowGuard: { color: '#e03a3a', r: 4 },
+      armBand: null,
+      hand: 'block',
+      handOutline: false,
+      shoeLegCover: true,
+      legPatch: false,
+      limbShape: 'block',
+      armDecoration: false,
+    },
+    hair: null,
+    headgear: [],
+    faceDeco: [],
+    showEars: false,
+    palette: { helm: '#d8dee6', helm2: '#8a96a4', visor: '#3ad0ff', core: '#3ad0ff', stripe: '#e03a3a', pod: '#9aa6b2', thruster: '#5a6470' },
+    // 頭: 丸い装甲のヘルメット + 横長のバイザー + 耳のパーツ + アンテナ
+    headCustom(ctx) {
+      const { g, hcx, hcy, Rh } = ctx, hv = ctx.hv, cs = hv && hv.turned ? hv.cs : 1;
+      const h1 = PAL(ctx, 'helm', '#d8dee6'), h2 = PAL(ctx, 'helm2', '#8a96a4'), vi = PAL(ctx, 'visor', '#3ad0ff'), st = PAL(ctx, 'stripe', '#e03a3a');
+      const p = ctx.p, hot = p && p.oh > 0;
+      // アンテナ
+      ctx.line([hcx - Rh * 0.3, hcy - Rh * 0.8], [hcx - Rh * 0.55, hcy - Rh * 1.55], 2.6, '#111');
+      ctx.line([hcx - Rh * 0.3, hcy - Rh * 0.8], [hcx - Rh * 0.55, hcy - Rh * 1.55], 1.4, ctx.C(h2));
+      ctx.dot(hcx - Rh * 0.55, hcy - Rh * 1.58, 2.6, ctx.C(hot ? '#ff5a3a' : vi));
+      // ヘルメット(角の丸い四角)
+      g.beginPath();
+      const x0 = hcx - Rh * 1.0, y0 = hcy - Rh * 1.0, w = Rh * 2.05, h = Rh * 1.95, r = Rh * 0.55;
+      if (g.roundRect) g.roundRect(x0, y0, w, h, r); else g.rect(x0, y0, w, h);
+      g.fillStyle = ctx.LG(x0, y0, x0 + w, y0 + h, ctx.K(h1, 0.15), ctx.K(h1, 0), ctx.K(h2, 0));
+      g.fill();
+      ctx.ol(2.5);
+      // 赤い線(頭頂)
+      ctx.line([hcx - Rh * 0.9, hcy - Rh * 0.55], [hcx + Rh * 0.2, hcy - Rh * 0.98], 2.4, ctx.C(st));
+      // 耳のパーツ
+      ctx.dot(hcx - Rh * 0.25 * cs, hcy + Rh * 0.05, Rh * 0.42, '#111');
+      ctx.dot(hcx - Rh * 0.25 * cs, hcy + Rh * 0.05, Rh * 0.34, ctx.K(h2, 0));
+      ctx.dot(hcx - Rh * 0.25 * cs, hcy + Rh * 0.05, Rh * 0.14, ctx.C(st));
+      // バイザー(顔の前側。光る)
+      const vx = hcx + Rh * (0.05 + 0.3 * cs), vy = hcy - Rh * 0.2;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(vx - Rh * 0.35, vy - Rh * 0.22, Rh * 1.32, Rh * 0.48, Rh * 0.2); else g.rect(vx - Rh * 0.35, vy - Rh * 0.22, Rh * 1.32, Rh * 0.48);
+      g.fillStyle = '#10161c';
+      g.fill();
+      ctx.ol(1.6);
+      const vc = hot ? '#ff5a3a' : vi, blink = p && p.st === 'hit' ? 0.4 : 1;
+      g.globalAlpha = blink;
+      g.fillStyle = ctx.LG(vx - Rh * 0.3, vy, vx + Rh * 0.95, vy, ctx.K(vc, -0.2), ctx.K(vc, 0.3));
+      g.fillRect(vx - Rh * 0.2, vy - Rh * 0.08, Rh * 1.05, Rh * 0.18);
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = 0.35 * blink;
+      g.fillRect(vx - Rh * 0.3, vy - Rh * 0.2, Rh * 1.25, Rh * 0.42);
+      g.globalCompositeOperation = 'source-over';
+      g.globalAlpha = 1;
+      // あごの通気口
+      for (let i = 0; i < 3; i++) ctx.line([hcx + Rh * (0.35 + i * 0.18), hcy + Rh * 0.5], [hcx + Rh * (0.35 + i * 0.18), hcy + Rh * 0.78], 1.2, '#2a3038');
+      return true;
+    },
+    // 胸の炉心(熱がたまるほど橙→赤に。オーバーヒート中は点滅)
+    torso(ctx) {
+      const { P, hw, g } = ctx, p = ctx.p, H = p && p.ch && p.ch.ht, r = H ? Math.min(1, (p.heat || 0) / H.max) : 0;
+      const c0 = PAL(ctx, 'core', '#3ad0ff'), hot = p && p.oh > 0;
+      const col = hot ? (fr % 10 < 5 ? '#ff3a1a' : '#ffb040') : r > 0.66 ? '#ff7a3a' : r > 0.33 ? '#ffd040' : c0;
+      const c = P(0.62, hw * 0.5);
+      ctx.dot(c[0], c[1], 7.5, '#111');
+      ctx.dot(c[0], c[1], 6.4, '#2a3038');
+      g.globalCompositeOperation = 'lighter';
+      g.fillStyle = ctx.RG(c[0], c[1], 0.5, 9, col, 'rgba(0,0,0,0)');
+      g.beginPath(); g.arc(c[0], c[1], 9, 0, 7); g.fill();
+      g.globalCompositeOperation = 'source-over';
+      ctx.dot(c[0], c[1], 3.6, ctx.C(col));
+      ctx.dot(c[0] - 1, c[1] - 1, 1.2, '#fff');
+      ctx.line(P(0.2, hw * 0.95), P(0.95, hw * 0.95), 2.2, ctx.C(PAL(ctx, 'stripe', '#e03a3a')));
+    },
+    // 背中の2本のスラスター(ダッシュ・噴射の技のときに炎)
+    back(ctx) {
+      const { P, hw, g } = ctx, p = ctx.p, col = PAL(ctx, 'thruster', '#5a6470'), pod = PAL(ctx, 'pod', '#9aa6b2');
+      if (pod) {                                                         // 背中から肩の上へ出たミサイルポッド
+        const c = P(1.08, -hw * 0.75);
+        g.save(); g.translate(c[0], c[1]); g.rotate(Math.atan2(ctx.ls || 0, ctx.lc ?? 1));
+        g.beginPath(); if (g.roundRect) g.roundRect(-12, -10, 20, 13, 3); else g.rect(-12, -10, 20, 13);
+        g.fillStyle = ctx.K(pod, 0); g.fill(); ctx.ol(2);
+        for (let i = 0; i < 3; i++) ctx.dot(-8 + i * 6, -4, 1.9, '#2a3038');
+        g.restore();
+      }
+      const on = p && (p.st === 'dash' || (p.st === 'atk' && p.mv && /^(da|su|b|af|sf)$/.test(p.mv.k)));
+      for (const [t, k] of [[0.75, 0], [0.38, 1]]) {
+        const a = P(t, -hw * 0.95), b2 = P(t - 0.18, -hw * 1.35);
+        ctx.line(a, b2, 9, '#111');
+        ctx.line(a, b2, 7, ctx.K(col, k ? -0.1 : 0));
+        if (on) {
+          const L = 14 + Math.sin((typeof fr !== 'undefined' ? fr : 0) * 1.3 + k) * 4, dx = b2[0] - a[0], dy = b2[1] - a[1], d = Math.hypot(dx, dy) || 1;
+          g.globalCompositeOperation = 'lighter';
+          g.fillStyle = ctx.RG(b2[0], b2[1], 1, L, 'rgba(255,200,90,.9)', 'rgba(255,90,30,0)');
+          g.beginPath(); g.arc(b2[0] + (dx / d) * L * 0.5, b2[1] + (dy / d) * L * 0.5, L * 0.7, 0, 7); g.fill();
+          g.globalCompositeOperation = 'source-over';
+        }
+      }
+    },
+  },
+
+  // カルタ … カードの奇術師の女性。深紅のゆるい巻き髪、シルクハット(赤い帯にトランプを差す)、
+  //   黒い燕尾のジャケットに白いシャツと赤い蝶ネクタイ、短いスカートと黒いタイツ。手にはトランプの扇
+  'カルタ': {
+    body: {
+      scale: 0.8,
+      headRadius: 13,
+      handRadius: 6,
+      torsoLength: 38,
+      torsoWidth: 12.5,
+      upperArm: { length: 24, width: 6 },
+      lowerArm: { length: 23, width: 5.5, band: { color: '#ffffff', from: 0.86, to: 0.98, pad: 1.4 } },   // 白いカフス
+      thighLength: 34,
+      shinLength: 37,
+      legWidth: 8,
+      thighWidth: 8.5,
+      shinWidth: 6,
+      pantsColor: '#f6dccc',
+      beltColor: '#e0304a',
+      buckleColor: '#ffd84a',
+      sleeves: true,
+      foreArmColor: '#1e1a2a',
+      handColor: '#ffffff',
+      shoesColor: '#1a1420',
+      top: { type: 'jacket', color: '#1e1a2a', inner: '#ffffff' },
+      bottom: { type: 'socks', sock: '#2a2030', top: 0.02, trim: '#e0304a' },
+      torsoType: 'hourglass',
+      armType: 'longSleeve',
+      armBand: null,
+      hand: 'normal',
+      handOutline: false,
+      shoeLegCover: false,
+      legPatch: false,
+      armDecoration: false,
+    },
+    headShape: 'heroine',
+    hair: [
+      { type: 'long', color: '#b81e3a', length: 0.7, volume: 8, wave: 0.6, tip: 'round' },
+      { type: 'bangs', style: 'side', color: '#b81e3a', length: 0.5, sideburn: 0.9, partY: 0.3 },
+    ],
+    headgear: [],
+    faceDeco: [{ type: 'star', x: 0.3, y: 0.28, size: 0.45, color: '#e0304a' }],   // 目の下の小さなダイヤのしるし(星で代用)
+    clothes: [
+      { type: 'skirt', color: '#1e1a2a', trim: '#e0304a', length: 0.3, flare: 9, waist: 0.05 },
+    ],
+    nose: 'girl',
+    eyes: { type: 'anime', color: '#d4a020', x: 0.6, y: 0.1, size: 1.05, width: 1, height: 0.9 },   // 金色の目
+    brows: { type: 'arch', thickness: 1.5, color: '#7a1020' },
+    mouth: { closed: 'smirk', open: 'laugh', x: 0.6, y: 0.57, size: 0.8, width: 0.5, lineWidth: 1.1, color: '#8a1a2a' },
+    moveDust: { color: '#ffd84a', color2: '#ff5a7a', rate: 0.25, size: 0.7, life: 28, from: 0.4, to: 0.9, behind: 10 },
+    weaponGrip: false,
+    palette: { hat: '#1a1622', hatBand: '#e0304a', bow: '#e0304a', tails: '#1e1a2a', card: '#e0304a', vest: '#e0304a' },
+
+    // 胸: 赤い蝶ネクタイとベストのボタン
+    torso(ctx) {
+      const { P, hw, g } = ctx, bw = PAL(ctx, 'bow', '#e0304a'), vs = PAL(ctx, 'vest', '#e0304a');
+      if (vs) for (let i = 0; i < 3; i++) ctx.dot(...P(0.2 + i * 0.16, hw * 0.92), 1.5, ctx.C(vs));
+      const c = P(0.9, hw * 0.92);
+      for (const s of [-1, 1]) {
+        g.beginPath(); g.moveTo(c[0], c[1]); g.lineTo(c[0] + s * 6, c[1] - 3.5); g.lineTo(c[0] + s * 6, c[1] + 3.5); g.closePath();
+        g.fillStyle = ctx.C(bw); g.fill(); ctx.ol(1);
+      }
+      ctx.dot(c[0], c[1], 2, ctx.C(ctx.K(bw, -0.3)));
+    },
+    // 燕尾(ジャケットの後ろの2本の長いすそ)
+    waist(ctx, b, tr, wv) {
+      const col = PAL(ctx, 'tails', '#1e1a2a');
+      [[-12, 30, 0], [-6, 34, -0.15]].forEach(([dx, dy, dim], k) => {
+        const pts = ctx.strand('ktail' + k, [b[0] - 4, b[1] - 6], { len: Math.hypot(dx, dy), n: 4, dir: [dx, dy], stiff: [0.45, 0.05], damp: 0.08, flutter: 0.7, seed: k * 1.3, collide: 'back', r: 2 });
+        strandRibbon(ctx, pts, 7, 5, ctx.K(col, dim), true);
+      });
+    },
+    // シルクハット(赤い帯にトランプを1枚差す)。頭の動きに合わせて少し傾く
+    headFront(ctx) {
+      const { g, hcx, hcy, Rh } = ctx, hat = PAL(ctx, 'hat', '#1a1622'), band = PAL(ctx, 'hatBand', '#e0304a');
+      if (!hat) return;
+      const cx = hcx - Rh * 0.05, by = hcy - Rh * 0.78, tilt = -0.12;
+      g.save(); g.translate(cx, by); g.rotate(tilt);
+      g.beginPath(); g.ellipse(0, 0, Rh * 1.25, Rh * 0.3, 0, 0, 7);           // つば
+      g.fillStyle = ctx.K(hat, 0); g.fill(); ctx.ol(2);
+      g.beginPath(); g.moveTo(-Rh * 0.72, 0); g.lineTo(-Rh * 0.65, -Rh * 1.25); g.quadraticCurveTo(0, -Rh * 1.38, Rh * 0.65, -Rh * 1.25); g.lineTo(Rh * 0.72, 0); g.closePath();
+      g.fillStyle = ctx.LG(-Rh, 0, Rh, 0, ctx.K(hat, 0.15), ctx.K(hat, -0.1)); g.fill(); ctx.ol(2);
+      g.fillStyle = ctx.C(band); g.fillRect(-Rh * 0.7, -Rh * 0.42, Rh * 1.4, Rh * 0.3);
+      g.lineWidth = 1; g.strokeStyle = '#111'; g.strokeRect(-Rh * 0.7, -Rh * 0.42, Rh * 1.4, Rh * 0.3);
+      g.restore();
+      if (typeof fxCard === 'function') fxCard(cx - Rh * 0.55, by - Rh * 0.55, 4.5, -0.35, PAL(ctx, 'card', '#e0304a'), '♠', '#111');   // 帯に差したトランプ
+    },
+    // トランプの扇(手の上に3枚)。投げる技の発生の後は1枚少なく見える
+    weapon(ctx, e, ux, uy) {
+      if (typeof fxCard !== 'function') return;
+      const a = Math.atan2(uy, ux), col = PAL(ctx, 'card', '#e0304a');
+      for (let i = 0; i < 3; i++) fxCard(e[0] + ux * 9, e[1] + uy * 9, 5.5, a + Math.PI / 2 + (i - 1) * 0.35, col, '♠♥♦'[i], '#111');
+    },
+  },
+
+
 };
 
 
@@ -1832,6 +2321,132 @@ const CHARACTER_SKINS = {
           { type: 'skirt', color: '#bfe4ff', length: 0.5, flare: 15, waist: 0.2 },
           { type: 'skirt', color: '#1c2448', trim: '#bfe4ff', length: 0.42, flare: 13, waist: 0.2 },
           { type: 'skirt', color: '#2a3a70', trim: '#ffd84a', length: 0.22, flare: 9, waist: 0.2 }] } },
+  ],
+  // ハヤテ  palette: fan / fan2 / rib(鉄扇) / sash(腰の帯) / cord(胸の紐)
+  'ハヤテ': [
+    // 嵐の旅人: 紺の羽織・灰色の袴・黒い扇・灰色のマフラー
+    { name: '嵐の旅人', color: '#2a3a5a', pj: '#c8d8ff',
+      palette: { fan: '#2a2a3a', fan2: '#9ab0d8', rib: '#111', sash: '#4a5a7a', cord: '#c8d8ff' },
+      draw: {
+        body: { pantsColor: '#6a7080', beltColor: '#4a5a7a', top: { type: 'vest', color: '#2a3a5a', inner: '#d8dce8', buttons: 0 }, bottom: { type: 'wide', color: '#6a7080', flare: 1.7 }, shoesColor: '#2a2a30' },
+        hair: [{ ...CD('ハヤテ').hair[0], color: '#2a2a40', tie: '#c8d8ff' }, { ...CD('ハヤテ').hair[1], color: '#2a2a40' }],
+        clothes: [{ type: 'scarf', color: '#8a92a8', color2: '#6a7088', length: 54, flutter: 1.6 }],
+        faceDeco: [{ type: 'scar', from: [0.5, -0.55], to: [0.72, -0.2], w: 1.8, color: '#a05a4a' }] } },
+    // 紅葉風: 赤と橙の羽織・山吹の扇・もみじ色の髪
+    { name: '紅葉風', color: '#c84a2a', pj: '#ffb070',
+      palette: { fan: '#ffb030', fan2: '#fff0c0', rib: '#5a2a1a', sash: '#e85a2a', cord: '#ffe0a0' },
+      draw: {
+        body: { pantsColor: '#f0e0c0', beltColor: '#e85a2a', top: { type: 'vest', color: '#c84a2a', inner: '#fff4e0', buttons: 0 }, bottom: { type: 'wide', color: '#5a3a2a', flare: 1.7 }, shoesColor: '#3a2010' },
+        hair: [{ ...CD('ハヤテ').hair[0], color: '#a8401a', tie: '#ffd040' }, { ...CD('ハヤテ').hair[1], color: '#a8401a' }],
+        clothes: [{ type: 'scarf', color: '#ffd040', color2: '#e89020', length: 54, flutter: 1.6 }],
+        faceDeco: [{ type: 'line', from: [0.42, 0.18], to: [0.62, 0.3], w: 1.6, color: '#e85a2a' }] } },
+    // 天狗: 黒い羽織・赤い袴・山伏の頭襟(赤い小さな帽子)・羽団扇の色
+    { name: '天狗', color: '#1a1a22', pj: '#ff6a5a',
+      palette: { fan: '#f4f0e8', fan2: '#ffffff', rib: '#8a1a1a', sash: '#c81e1e', cord: '#ffffff' },
+      draw: {
+        body: { pantsColor: '#c81e1e', beltColor: '#c81e1e', top: { type: 'vest', color: '#1a1a22', inner: '#f4f0e8', buttons: 0 }, bottom: { type: 'wide', color: '#c81e1e', flare: 1.8 }, shoesColor: '#5a3a1a' },
+        hair: [{ ...CD('ハヤテ').hair[0], color: '#e8e8f0', tie: '#c81e1e' }, { ...CD('ハヤテ').hair[1], color: '#e8e8f0' }],
+        headgear: [{ type: 'crown', color: '#1a1a22', width: 0.4, height: 0.55, gem: '#c81e1e' }],
+        clothes: [{ type: 'scarf', color: '#f4f0e8', color2: '#d8d0c0', length: 54, flutter: 1.6 }],
+        eyes: { ...CD('ハヤテ').eyes, type: 'red' } } },
+  ],
+  // セツカ  palette: fur(毛皮の襟) / clasp(結晶の留め具) / coatLine / shaft / blade / blade2(槍)
+  'セツカ': [
+    // 氷の女王: 濃い青の外套・銀の縁・大きなティアラ
+    { name: '氷の女王', color: '#2a4a8a', pj: '#7ac8ff',
+      palette: { fur: '#e8f0ff', clasp: '#c8e8ff', coatLine: '#c8d8f0', shaft: '#c8d0e0', blade: '#5ab0ff', blade2: '#e8f8ff' },
+      draw: {
+        body: { pantsColor: '#1a2a5a', shoesColor: '#1a2a5a', beltColor: '#c8d0e0', foreArmColor: '#2a4a8a' },
+        headgear: [{ type: 'crown', color: '#e8f0ff', width: 0.85, height: 0.9, gem: '#2a6ad8' }],
+        clothes: [{ type: 'robe', color: '#2a4a8a', trim: '#c8d0e0', length: 0.9, flare: 14 }, { type: 'cape', color: '#1a2a5a', trim: '#c8d0e0', clasp: '#7ac8ff', length: 0.85, flare: 12 }] } },
+    // 桜氷: 薄桃の外套・桜色の髪・桃色に透ける氷
+    { name: '桜氷', color: '#ffd8e8', pj: '#ffb0d0',
+      palette: { fur: '#fff4f8', clasp: '#ff8ab8', coatLine: '#ffb0cc', shaft: '#fff0f6', blade: '#ffb0d8', blade2: '#ffffff' },
+      draw: {
+        body: { pantsColor: '#f8d0e0', shoesColor: '#e87aa8', beltColor: '#ff8ab8', foreArmColor: '#ffd8e8' },
+        hair: [{ ...CD('セツカ').hair[0], color: '#ffd0e4' }, { ...CD('セツカ').hair[1], color: '#ffd0e4' }],
+        headgear: [{ type: 'crown', color: '#ffc4dc', width: 0.75, height: 0.7, gem: '#ff5a9a' }],
+        eyes: { ...CD('セツカ').eyes, color: '#e04a8a' },
+        clothes: [{ type: 'robe', color: '#ffd8e8', trim: '#ff8ab8', length: 0.86, flare: 12 }] } },
+    // 夜霜: 黒い外套・紫の氷・黒い毛皮
+    { name: '夜霜', color: '#1e1a2a', pj: '#b08aff',
+      palette: { fur: '#3a344a', clasp: '#b08aff', coatLine: '#5a4a7a', shaft: '#2a2436', blade: '#b08aff', blade2: '#f0e8ff' },
+      draw: {
+        body: { pantsColor: '#141020', shoesColor: '#2a2040', beltColor: '#b08aff', foreArmColor: '#1e1a2a' },
+        hair: [{ ...CD('セツカ').hair[0], color: '#5a5470' }, { ...CD('セツカ').hair[1], color: '#5a5470' }],
+        headgear: [{ type: 'crown', color: '#8a6ad8', width: 0.75, height: 0.7, gem: '#e8d8ff' }],
+        eyes: { ...CD('セツカ').eyes, color: '#a05aff' },
+        clothes: [{ type: 'robe', color: '#1e1a2a', trim: '#b08aff', length: 0.86, flare: 12 }] } },
+  ],
+  // シゲル  palette: sprout / sprout2(頭の芽) / flower(芽の花。null で無し) / cape / cape2(背中の葉。cape: null で無し)
+  'シゲル': [
+    // 秋の実り: 橙のパーカー・紅葉のマント・どんぐり色の髪
+    { name: '秋の実り', color: '#e8862a', pj: '#ffb040',
+      palette: { sprout: '#e8a030', sprout2: '#8a5a2a', cape: '#e85a2a', cape2: '#c8862a', flower: null },
+      draw: {
+        body: { top: { type: 'hoodie', color: '#e8862a', strings: '#fff0c0', pocket: true }, bottom: { type: 'shorts', color: '#5a3a1a', hem: 0.62 }, shoesColor: '#3a2410',
+          lowerArm: { wrap: { color: '#a8601a', stripe: '#7a4010', from: 0.1, to: 0.9, count: 5 } } },
+        hair: [{ ...CD('シゲル').hair[0], color: '#7a4a1a' }] } },
+    // 花咲き: 桃色の花が咲いた芽・若草のパーカー・花びらのマント
+    { name: '花咲き', color: '#9ae07a', pj: '#ff9ac8',
+      palette: { sprout: '#7ad04a', sprout2: '#4a9a2a', flower: '#ff7ab8', cape: '#ffb0d0', cape2: '#ff8ac0' },
+      draw: {
+        body: { top: { type: 'hoodie', color: '#9ae07a', strings: '#ff9ac8', pocket: true }, bottom: { type: 'shorts', color: '#f0e0c0', hem: 0.62 }, shoesColor: '#e87aa8' },
+        hair: [{ ...CD('シゲル').hair[0], color: '#8ac04a' }],
+        faceDeco: [{ type: 'blush', x: 0.4, y: 0.4, r: 0.18, color: '#ff9ab8' }] } },
+    // 深い森: 濃い緑のパーカー・茶色のきのこ色の芽・苔のマント
+    { name: '深い森', color: '#1e4a2a', pj: '#7ae0a0',
+      palette: { sprout: '#c8a07a', sprout2: '#6a4a2a', flower: '#e84a3a', cape: '#2a6a3a', cape2: '#1a4a2a' },
+      draw: {
+        body: { top: { type: 'hoodie', color: '#1e4a2a', strings: '#c8a07a', pocket: true }, bottom: { type: 'shorts', color: '#3a2a1a', hem: 0.62 }, shoesColor: '#2a1a10',
+          lowerArm: { wrap: { color: '#1e5a2a', stripe: '#0e3a1a', from: 0.1, to: 0.9, count: 5 } } },
+        hair: [{ ...CD('シゲル').hair[0], color: '#2a3a1a' }],
+        eyes: { ...CD('シゲル').eyes, color: '#e0a03a' } } },
+  ],
+  // ギア  palette: helm / helm2(頭の装甲) / visor(目) / core(胸の炉心) / stripe(赤い線) / pod(肩のポッド) / thruster(背中の噴射口)
+  'ギア': [
+    // 試作機: 白と青の装甲
+    { name: '試作機', color: '#e8eef4', skin: '#c8d4e0', pj: '#9ad8ff',
+      palette: { helm: '#ffffff', helm2: '#b8c8d8', visor: '#5ab0ff', core: '#5ab0ff', stripe: '#2a6ad8', pod: '#d8e0e8', thruster: '#8a9aaa' },
+      draw: { body: { pantsColor: '#8a9aaa', handColor: '#b8c8d8', foreArmColor: '#e8eef4', top: { type: 'armor', color: '#b8c8d8', plate: '#ffffff', rivet: '#2a6ad8' }, bottom: { type: 'greaves', color: '#8a9aaa', greave: '#ffffff' },
+        elbowGuard: { color: '#2a6ad8', r: 4 }, lowerArm: { band: { color: '#2a6ad8', from: 0.7, to: 0.8, pad: 1.4 } } } } },
+    // 重装型: 深緑の軍用の装甲・黄色い目
+    { name: '重装型', color: '#5a6a3a', skin: '#4a5a32', pj: '#ffd040',
+      palette: { helm: '#7a8a52', helm2: '#4a5a32', visor: '#ffd040', core: '#ffd040', stripe: '#ffd040', pod: '#6a7a42', thruster: '#3a4228' },
+      draw: { body: { pantsColor: '#3a4228', handColor: '#4a5a32', foreArmColor: '#6a7a42', top: { type: 'armor', color: '#4a5a32', plate: '#7a8a52', rivet: '#ffd040' }, bottom: { type: 'greaves', color: '#3a4228', greave: '#6a7a42' },
+        elbowGuard: { color: '#ffd040', r: 4 }, lowerArm: { band: { color: '#ffd040', from: 0.7, to: 0.8, pad: 1.4 } } } } },
+    // ブラックオプス: 黒と金・赤い目
+    { name: 'ブラックオプス', color: '#22242a', skin: '#2a2c32', pj: '#ff4a3a',
+      palette: { helm: '#3a3c44', helm2: '#1a1c22', visor: '#ff3a2a', core: '#ff3a2a', stripe: '#d8b040', pod: '#2a2c32', thruster: '#1a1c22' },
+      draw: { body: { pantsColor: '#14161a', handColor: '#2a2c32', foreArmColor: '#3a3c44', top: { type: 'armor', color: '#1a1c22', plate: '#3a3c44', rivet: '#d8b040' }, bottom: { type: 'greaves', color: '#14161a', greave: '#3a3c44' },
+        elbowGuard: { color: '#d8b040', r: 4 }, lowerArm: { band: { color: '#d8b040', from: 0.7, to: 0.8, pad: 1.4 } } } } },
+  ],
+  // カルタ  palette: hat / hatBand(シルクハット) / bow(蝶ネクタイ) / vest(ボタン) / tails(燕尾) / card(トランプの縁)
+  'カルタ': [
+    // ジョーカー: 紫と緑の道化の服・緑の髪
+    { name: 'ジョーカー', color: '#4a2a6a', pj: '#7aff7a',
+      palette: { hat: '#4a2a6a', hatBand: '#3ad04a', bow: '#3ad04a', vest: '#3ad04a', tails: '#4a2a6a', card: '#7a3ad0' },
+      draw: {
+        body: { top: { type: 'jacket', color: '#4a2a6a', inner: '#e8ffe0' }, foreArmColor: '#4a2a6a', beltColor: '#3ad04a', bottom: { type: 'socks', sock: '#1a3a1a', top: 0.02, trim: '#3ad04a' } },
+        hair: [{ ...CD('カルタ').hair[0], color: '#2a9a3a' }, { ...CD('カルタ').hair[1], color: '#2a9a3a' }],
+        eyes: { ...CD('カルタ').eyes, color: '#b03ad0' },
+        faceDeco: [{ type: 'star', x: 0.3, y: 0.28, size: 0.5, color: '#3ad04a' }],
+        clothes: [{ type: 'skirt', color: '#4a2a6a', trim: '#3ad04a', length: 0.3, flare: 9, waist: 0.05 }] } },
+    // 白いディーラー: 白いスーツ・黒い帽子・銀髪
+    { name: '白いディーラー', color: '#f4f0e8', pj: '#ffd84a',
+      palette: { hat: '#f4f0e8', hatBand: '#1a1622', bow: '#1a1622', vest: '#1a1622', tails: '#f4f0e8', card: '#1a1622' },
+      draw: {
+        body: { top: { type: 'jacket', color: '#f4f0e8', inner: '#1a1622' }, foreArmColor: '#f4f0e8', beltColor: '#1a1622', handColor: '#1a1622', bottom: { type: 'socks', sock: '#f4f0e8', top: 0.02, trim: '#1a1622' }, shoesColor: '#f4f0e8' },
+        hair: [{ ...CD('カルタ').hair[0], color: '#d8d8e8' }, { ...CD('カルタ').hair[1], color: '#d8d8e8' }],
+        eyes: { ...CD('カルタ').eyes, color: '#3a6ad8' },
+        clothes: [{ type: 'skirt', color: '#f4f0e8', trim: '#1a1622', length: 0.3, flare: 9, waist: 0.05 }] } },
+    // ゴールドラッシュ: 金と黒・金髪
+    { name: 'ゴールドラッシュ', color: '#1a1622', pj: '#ffd84a',
+      palette: { hat: '#d8a020', hatBand: '#1a1622', bow: '#ffd84a', vest: '#ffd84a', tails: '#1a1622', card: '#d8a020' },
+      draw: {
+        body: { top: { type: 'jacket', color: '#1a1622', inner: '#ffd84a' }, beltColor: '#ffd84a', bottom: { type: 'socks', sock: '#1a1622', top: 0.02, trim: '#ffd84a' } },
+        hair: [{ ...CD('カルタ').hair[0], color: '#f0c040' }, { ...CD('カルタ').hair[1], color: '#f0c040' }],
+        clothes: [{ type: 'skirt', color: '#d8a020', trim: '#1a1622', length: 0.3, flare: 9, waist: 0.05 }] } },
   ],
 };
 

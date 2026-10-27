@@ -322,6 +322,76 @@ const EFFECT_PRESETS = {
       { type: 'petals', at: 'ground', count: 10, dir: 'up', speed: 5, spread: 0.7, delay: 5 }],
     hit: [{ type: 'impact', r: 40, color: '#ffb02a', color2: '#fffbe0' }, { type: 'flash', r: 50, blend: 'add', duration: 10 }, { type: 'shake', duration: 8, power: 5 }],
   },
+  // ---- 風(ハヤテ) ----
+  // 疾風: 細い風の弧と、渦を巻く風の筋
+  gale: {
+    color: '#9ff0d6',
+    color2: '#ffffff',
+    attack: [{ type: 'crescent', width: 6, span: 2.4, color: '#c8fff0' }, { type: 'gust', r: 40, count: 3, width: 2.5 }],
+    hit: [{ type: 'gust', r: 36, count: 4, width: 3 }, { type: 'burst', r: 24, count: 6 }],
+  },
+  // 旋風: 体のまわりを回る竜巻
+  cyclone: {
+    color: '#bff5e6',
+    color2: '#ffffff',
+    start: [{ type: 'gust', at: 'body', r: 44, count: 4, duration: 12, follow: true }],
+    attack: [{ type: 'tornado', at: 'feet', r: 46, length: 150, duration: 22, follow: true }, { type: 'particles', at: 'feet', count: 10, dir: 'up', speed: 5, gravity: -0.1, life: 24 }],
+    hit: [{ type: 'gust', r: 34, count: 3 }, { type: 'burst', r: 26, count: 6 }],
+  },
+  // ---- 氷(セツカ) ----
+  // 霜: 氷の三日月と、舞う雪の結晶
+  frost: {
+    color: '#9fe6ff',
+    color2: '#ffffff',
+    attack: [{ type: 'crescent', width: 8, span: 2, color: '#cff4ff' }, { type: 'snow', r: 34, count: 6, duration: 18 }],
+    hit: [{ type: 'star', count: 6, r: 18, spin: 2 }, { type: 'snow', r: 30, count: 8, duration: 22 }],
+  },
+  // 氷柱: 足元から氷の柱が突き出る
+  glacier: {
+    color: '#9fe6ff',
+    color2: '#ffffff',
+    attack: [{ type: 'icicle', at: 'ground', r: 44, count: 5, length: 70, duration: 22 }, { type: 'snow', at: 'ground', y: -30, r: 40, count: 8, duration: 24 }],
+    hit: [{ type: 'impact', r: 30, color: '#9fe6ff', color2: '#ffffff' }, { type: 'snow', r: 28, count: 6 }],
+  },
+  // ---- 草(シゲル) ----
+  // 若葉: つるが伸びて、葉っぱが舞う
+  verdant: {
+    color: '#5ac03a',
+    color2: '#c8ff7a',
+    attack: [{ type: 'vine', at: 'base', width: 5, duration: 14 }, { type: 'leaves', count: 5, r: 26, duration: 22 }],
+    hit: [{ type: 'leaves', r: 30, count: 8, duration: 26 }, { type: 'burst', r: 22, count: 6, color: '#bff07a' }],
+  },
+  // いばら: 地面から曲がったとげが生える
+  thorn: {
+    color: '#3a7a2a',
+    color2: '#bff07a',
+    attack: [{ type: 'thorns', at: 'ground', r: 40, count: 5, length: 60, duration: 20 }, { type: 'leaves', at: 'ground', y: -20, r: 34, count: 5, duration: 24 }],
+    hit: [{ type: 'impact', r: 28, color: '#6ad04a', color2: '#f0ffd0' }, { type: 'leaves', r: 24, count: 5 }],
+  },
+  // ---- 鋼(ギア) ----
+  // 鋼: 金属の弧と、飛び散る歯車
+  steel: {
+    color: '#cfd8e0',
+    color2: '#ff8a3a',
+    attack: [{ type: 'slash', width: 9, span: 1.8 }, { type: 'gear', count: 3, r: 22, duration: 14 }],
+    hit: [{ type: 'impact', r: 32, color: '#ffb040', color2: '#fff8e0' }, { type: 'gear', r: 28, count: 4, duration: 18 }, { type: 'particles', count: 8, speed: 6, color: '#ffd07a', gravity: 0.3 }],
+  },
+  // 噴射: 背中のスラスターの炎と蒸気
+  thruster: {
+    color: '#ff8a3a',
+    color2: '#ffe08a',
+    start: [{ type: 'steam', at: 'body', x: -20, r: 30, count: 6, duration: 14 }],
+    attack: [{ type: 'flame', at: 'body', x: -24, dir: 'back', rise: 4, count: 4, duration: 12 }, { type: 'lines', count: 4, at: 'body', length: 100 }],
+    hit: [{ type: 'impact', r: 34, color: '#ffb040', color2: '#fff8e0' }, { type: 'gear', r: 26, count: 3 }, { type: 'shake', duration: 6, power: 4 }],
+  },
+  // ---- 自由(カルタ) ----
+  // カード: トランプが舞う斬撃
+  card: {
+    color: '#e0304a',
+    color2: '#ffffff',
+    attack: [{ type: 'slash', width: 6, span: 2, color: '#ffffff' }, { type: 'cards', count: 3, r: 24, duration: 16 }],
+    hit: [{ type: 'cards', r: 28, count: 4, duration: 18 }, { type: 'star', count: 4, r: 14, spin: 2, color: '#ffe14a' }],
+  },
 };
 
 // ---- 従来の決まった見た目のエフェクト(effect が色の番号のとき) ----
@@ -880,6 +950,73 @@ function updateEffects() {
   if (shakeT > 0 && --shakeT <= 0) shakeP = 0;
 }
 
+// ---- 新しい部品の形(effect.js / projectile.js で使う) ----
+const fxRnd = (seed, i) => { const v = Math.sin((seed || 1) * 12.9898 + i * 78.233) * 43758.5453; return v - Math.floor(v); };   // 決まった乱数(形を毎F同じにする)
+function fxLeaf(x, y, s, rot, col) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  g.beginPath();
+  g.moveTo(-s, 0);
+  g.quadraticCurveTo(0, -s * 0.75, s, 0);
+  g.quadraticCurveTo(0, s * 0.75, -s, 0);
+  g.fillStyle = col;
+  g.fill();
+  g.lineWidth = 1;
+  g.strokeStyle = 'rgba(20,50,10,.75)';
+  g.stroke();
+  g.beginPath();
+  g.moveTo(-s * 0.8, 0);
+  g.lineTo(s * 0.8, 0);
+  g.strokeStyle = 'rgba(255,255,220,.5)';
+  g.stroke();
+  g.restore();
+}
+function fxGear(x, y, s, rot, col) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  g.beginPath();
+  for (let k = 0; k < 16; k++) {
+    const a = (k / 16) * Math.PI * 2, rr = k % 2 ? s : s * 0.72;
+    g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  g.closePath();
+  g.fillStyle = col;
+  g.fill();
+  g.lineWidth = 1.2;
+  g.strokeStyle = '#222';
+  g.stroke();
+  g.beginPath();
+  g.arc(0, 0, s * 0.3, 0, 7);
+  g.fillStyle = '#333';
+  g.fill();
+  g.restore();
+}
+function fxCard(x, y, s, rot, col, suit, ink) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  const w = s * 1.3, h = s * 1.8;
+  g.fillStyle = '#fffdf6';
+  g.beginPath();
+  g.rect(-w / 2, -h / 2, w, h);
+  g.fill();
+  g.lineWidth = 1.2;
+  g.strokeStyle = '#222';
+  g.stroke();
+  g.strokeStyle = col;
+  g.strokeRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4);
+  if (suit) {
+    g.fillStyle = suit === '♥' || suit === '♦' ? '#e0304a' : '#1a1a24';
+    g.font = 'bold ' + Math.round(s * 1.1) + 'px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(suit, 0, 1);
+  }
+  g.restore();
+}
+
 // 部品の描き方。u = 残り(1→0) / q = 進み(0→1)
 function drawEffect(f) {
   if (f.dl > 0 || f.type === 'particles' || f.type === 'shake' || (f.type === 'debris' && !f.chunks) || (f.type === 'blood' && !f.drops) || (f.type === 'petals' && !f.petals)) return;
@@ -1308,6 +1445,163 @@ function drawEffect(f) {
       g.strokeStyle = f.c2;
       g.lineWidth = 2;
       g.stroke();
+      break;
+    }
+    // ---- 新しいキャラ用の部品(ハヤテ・セツカ・シゲル・ギア・カルタ)。どれも f.seed から形を決める(毎F同じ形) ----
+    case 'gust': { // 風の筋: 渦を巻きながら前へ流れる細い弧  count=筋の数(3) width=太さ
+      const n = f.n ?? 3;
+      g.translate(x, y);
+      g.scale(f.f, 1);
+      for (let i = 0; i < n; i++) {
+        const a0 = fxRnd(f.seed, i) * 6.28 + q * 4.2, rr = r * (0.45 + 0.55 * fxRnd(f.seed, i + 9)) * (0.6 + q * 0.6), cx = -r * 0.3 + q * r * 0.9;
+        g.lineWidth = (f.w ?? 3) * (0.4 + u);
+        g.strokeStyle = i % 2 ? f.c2 : f.c;
+        g.beginPath();
+        g.ellipse(cx, (fxRnd(f.seed, i + 3) - 0.5) * r * 0.6, rr, rr * 0.38, -0.2, a0, a0 + 2.2 + u);
+        g.stroke();
+      }
+      break;
+    }
+    case 'tornado': { // 竜巻: 下が細く上が広い、回る楕円の重なり  r=上の幅 length=高さ
+      const H = f.len ?? r * 2.6, rot = (f.l - f.t) * 0.45, k = Math.min(1, q * 4);
+      g.lineWidth = f.w ?? 3;
+      for (let i = 0; i < 9; i++) {
+        const t = i / 8, yy = y - H * t * k, rw = (6 + r * t) * (0.9 + 0.1 * Math.sin(rot + i));
+        g.strokeStyle = i % 3 === 0 ? f.c2 : f.c;
+        g.globalAlpha = Math.min(1, u * 1.6) * (0.5 + 0.5 * t);
+        g.beginPath();
+        g.ellipse(x + Math.sin(rot * 0.7 + t * 3) * 6, yy, rw, rw * 0.22 + 2, 0, rot + i, rot + i + 4.4);
+        g.stroke();
+      }
+      break;
+    }
+    case 'icicle': // 地面から氷柱が突き出る  count=本数(5) r=並ぶ幅 length=高さ。burst で砕けて飛ぶ
+    case 'thorns': { // いばら(同じ形で、曲がったとげ)
+      const n = f.n ?? 5, H = f.len ?? r * 1.1, up = Math.min(1, q * 5), th = f.type === 'thorns';
+      for (let i = 0; i < n; i++) {
+        const t = n > 1 ? i / (n - 1) - 0.5 : 0, bx = x + f.f * t * r * 1.6, hh = H * (0.55 + 0.45 * fxRnd(f.seed, i)) * (1 - Math.abs(t) * 0.6),
+          wd = (th ? 7 : 9) * (0.7 + 0.5 * fxRnd(f.seed, i + 4)), lean = (fxRnd(f.seed, i + 7) - 0.5) * 0.5 + t * 0.5,
+          fly = f.burst ? q * 40 : 0, tipX = bx + Math.sin(lean) * hh * up + t * fly * 2, tipY = y - Math.cos(lean) * hh * up - fly * 0.5;
+        g.beginPath();
+        g.moveTo(bx - wd + t * fly, y - fly * 0.2);
+        if (th) g.quadraticCurveTo(bx - wd * 0.2, y - hh * 0.6 * up, tipX, tipY);
+        else g.lineTo(tipX, tipY);
+        g.lineTo(bx + wd + t * fly, y - fly * 0.2);
+        g.closePath();
+        const gr = g.createLinearGradient(bx, y, tipX, tipY);
+        gr.addColorStop(0, f.c);
+        gr.addColorStop(1, f.c2);
+        g.fillStyle = gr;
+        g.fill();
+        g.lineWidth = 1.5;
+        g.strokeStyle = th ? 'rgba(20,40,10,.7)' : 'rgba(255,255,255,.8)';
+        g.stroke();
+      }
+      break;
+    }
+    case 'vine': { // つるが伸びる(葉つき)  r / length=長さ width=太さ angle=曲がり(-1 上へ・1 下へ)
+      const L = (f.len ?? r * 2.2) * Math.min(1, q * 3.5), bend = (f.ang || 0) * 0.6, wd = f.w ?? 6, N = 14;
+      const vert = (f.ang || 0) <= -2,                                // angle -2 以下 = 上へ伸びる(木・つるが立ち上がる)
+        pt = vert ? (t) => [x + f.f * (Math.sin(t * Math.PI * 1.5 + (f.seed % 3)) * 10 * t + ((f.ang || 0) + 2.5) * 40 * t * t), y - L * t]
+          : (t) => [x + f.f * L * t, y + Math.sin(t * Math.PI * 1.5 + (f.seed % 3)) * 9 * t + bend * L * t * t];
+      g.lineWidth = wd + 2.5;
+      g.strokeStyle = 'rgba(20,40,10,.85)';
+      g.beginPath();
+      for (let i = 0; i <= N; i++) { const P = pt(i / N); i ? g.lineTo(P[0], P[1]) : g.moveTo(P[0], P[1]); }
+      g.stroke();
+      g.lineWidth = wd;
+      g.strokeStyle = f.c;
+      g.stroke();
+      g.lineWidth = Math.max(1, wd * 0.3);
+      g.strokeStyle = f.c2;
+      g.stroke();
+      for (let i = 1; i < 6; i++) {                                 // 葉
+        const t = i / 6, P = pt(t), s2 = (i % 2 ? 1 : -1);
+        fxLeaf(P[0], P[1] + s2 * 4, 6 + wd * 0.4, f.f * (0.4 + s2 * 0.9), i % 2 ? f.c2 : f.c);
+      }
+      break;
+    }
+    case 'leaves': { // 葉っぱが舞う  count=枚数(8) r=広がり
+      const n = f.n ?? 8;
+      for (let i = 0; i < n; i++) {
+        const a = fxRnd(f.seed, i) * 6.28, d = r * (0.3 + 0.9 * fxRnd(f.seed, i + 20)) * Math.min(1, q * 2.2),
+          lx = x + Math.cos(a) * d + Math.sin(q * 6 + i) * 6, ly = y + Math.sin(a) * d * 0.7 + q * q * 30;
+        fxLeaf(lx, ly, 5 + 3 * fxRnd(f.seed, i + 5), a + q * 5 * (i % 2 ? 1 : -1), i % 3 ? f.c : f.c2);
+      }
+      break;
+    }
+    case 'snow': { // 雪の結晶が舞う  count=数(8) r=広がり
+      const n = f.n ?? 8;
+      g.lineWidth = 1.6;
+      for (let i = 0; i < n; i++) {
+        const a = fxRnd(f.seed, i) * 6.28, d = r * (0.2 + 0.9 * fxRnd(f.seed, i + 30)) * Math.min(1, q * 2),
+          sx2 = x + Math.cos(a) * d, sy2 = y + Math.sin(a) * d * 0.7 + q * 14, sz = 3 + 4 * fxRnd(f.seed, i + 2), rot = q * 2 + i;
+        g.strokeStyle = i % 2 ? f.c2 : f.c;
+        g.beginPath();
+        for (let k = 0; k < 3; k++) {
+          const b = rot + (k * Math.PI) / 3;
+          g.moveTo(sx2 - Math.cos(b) * sz, sy2 - Math.sin(b) * sz);
+          g.lineTo(sx2 + Math.cos(b) * sz, sy2 + Math.sin(b) * sz);
+        }
+        g.stroke();
+      }
+      break;
+    }
+    case 'steam': { // 蒸気(白い煙がふくらみながら昇る)  count=数(8)
+      const n = f.n ?? 8;
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (fxRnd(f.seed, i) - 0.5) * 2.2, d = r * (0.2 + 0.8 * q) * (0.6 + 0.5 * fxRnd(f.seed, i + 3)),
+          cx = x + Math.cos(a) * d, cy = y + Math.sin(a) * d, rr = (6 + r * 0.25 * q) * (0.7 + 0.5 * fxRnd(f.seed, i + 8));
+        g.globalAlpha = Math.min(1, u * 1.2) * 0.55;
+        g.fillStyle = i % 2 ? f.c2 : f.c;
+        g.beginPath();
+        g.arc(cx, cy, rr, 0, 7);
+        g.fill();
+      }
+      break;
+    }
+    case 'gear': { // 歯車・ボルトのかけらが飛び散る  count=数(5)
+      const n = f.n ?? 5;
+      for (let i = 0; i < n; i++) {
+        const a = fxRnd(f.seed, i) * 6.28, d = r * (0.3 + 1.0 * q) * (0.6 + 0.5 * fxRnd(f.seed, i + 1)),
+          cx = x + Math.cos(a) * d, cy = y + Math.sin(a) * d + q * q * 26, sz = 4 + 4 * fxRnd(f.seed, i + 6);
+        fxGear(cx, cy, sz, q * 8 * (i % 2 ? 1 : -1), i % 2 ? f.c : f.c2);
+      }
+      break;
+    }
+    case 'cards': { // トランプが飛び散る  count=枚数(5) text=カードに描く絵柄(♠♥♦♣)
+      const n = f.n ?? 5;
+      for (let i = 0; i < n; i++) {
+        const a = fxRnd(f.seed, i) * 6.28, d = r * (0.2 + 0.9 * q) * (0.6 + 0.5 * fxRnd(f.seed, i + 11)),
+          cx = x + Math.cos(a) * d, cy = y + Math.sin(a) * d, rot = a + q * 6 * (i % 2 ? 1 : -1);
+        fxCard(cx, cy, 8, rot, i % 2 ? f.c : '#ffffff', f.text || '♠♥♦♣'[i % 4], f.c);
+      }
+      break;
+    }
+    case 'laser': { // 細く強い光線(芯が白い)  length=長さ width=太さ。点滅しながら細くなる
+      const L = f.len ?? r * 4, wd = (f.w ?? 8) * (0.4 + u * 0.6) * (0.85 + 0.15 * Math.sin((f.l - f.t) * 1.7));
+      g.translate(x, y);
+      g.scale(f.f, 1);
+      g.globalCompositeOperation = 'lighter';
+      g.fillStyle = f.c;
+      g.fillRect(0, -wd, L, wd * 2);
+      g.fillStyle = f.c2;
+      g.fillRect(0, -wd * 0.35, L, wd * 0.7);
+      g.beginPath();
+      g.arc(0, 0, wd * 1.6, 0, 7);
+      g.fill();
+      break;
+    }
+    case 'missile': { // ミサイルの煙の軌跡(後ろへ流れる)
+      g.translate(x, y);
+      g.scale(f.f, 1);
+      for (let i = 0; i < 6; i++) {
+        g.globalAlpha = Math.min(1, u * 1.4) * (1 - i / 7) * 0.6;
+        g.fillStyle = i < 2 ? f.c : f.c2;
+        g.beginPath();
+        g.arc(-i * 9 - q * 20, (fxRnd(f.seed, i) - 0.5) * 6, 5 + i * 1.6, 0, 7);
+        g.fill();
+      }
       break;
     }
     case 'text': { // 文字

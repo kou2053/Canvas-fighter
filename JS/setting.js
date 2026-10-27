@@ -1425,6 +1425,8 @@
 //   キャラ用: magic(魔法の打撃) / shadow(忍びの斬撃) / rock(岩の打撃) / boulder(巨岩の一撃) / rage(狂戦士の打撃・炎) / breath(火炎の息) /
 //             blood(血の斬撃) / bloodRage(血の狂戦士の爪) / bloodRoar(血の咆哮) /
 //             nightmare(闇の魔法少女の打撃。三日月・星・ハート) / abyss(足元の闇の輪と紫の炎)
+//             gale(風の弧と渦)/ cyclone(竜巻)/ frost(氷の三日月と雪)/ glacier(足元の氷柱)/ verdant(つると葉)/ thorn(いばら)/
+//             steel(金属の弧と歯車)/ thruster(噴射の炎と蒸気)/ card(トランプの斬撃)   ※ 新しい5人用。部品は game_spec.js の 15-2章
 //   技の種類のプリセットは白が基本。キャラの色に合わせて { preset: 'kick', color: '#7df' } のように色を変えて使う
 //   プリセットは effect.js の EFFECT_PRESETS に同じ書き方で足せる(名前: { color, start, attack, hit })
 //   ※ 当たったときの白い光・輪(全部の技で共通)は今まで通り出る。hit の部品はそれに足して出る
@@ -1473,6 +1475,8 @@
 //   swordWave(剣気) / stone(岩・ゴーレム) / breath(炎の息) / bloodWave(血風刃・バーサク) / darkOrb(闇の弾・リリス) /
 //   star(星) / ice(氷) / shuriken(手裏剣) / arrow(矢) / heart(ハート) / shockwave(地面を走る衝撃波。path: 'ground' と使う) /
 //   sunRay(光の矢・アサカ) / sunPetal(光の花びら・アサカ)
+//   windBlade / tornado(ハヤテ) / iceLance / frostWave(セツカ) / seed / leafBlade(シゲル) / rocketFist / missile(ギア) / card / dice(カルタ)
+//   軌道 seed(落ちると罠の芽になる) / rise(止まって浮き上がる)。弾に hits / hitEvery を書くと何回も当たる
 //   プリセットは projectile.js の PROJECTILE_LOOKS に同じ書き方で足せる
 //
 // 軌道 (path):  すべてに angle(撃つ角度。度。マイナスで上向き) と from: { x, y }(弾の出る場所。足元から) が使える

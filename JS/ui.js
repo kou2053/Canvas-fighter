@@ -315,9 +315,10 @@ function uiCfg() {
   // 全員のコマ
   //   9人以上は5列にする(コマを細く)。3段以上になるときはコマを低くして、下の性能の欄に重ならないようにする
   const cols = CH.length > 8 ? 5 : 4, nrow = Math.ceil(CH.length / cols), gx0 = 458,
-    cw = cols === 5 ? 88 : 112, chh = nrow > 2 ? Math.floor((204 - (nrow - 1) * 10) / nrow) : 92, fs = Math.min(0.58, chh / 92 * 0.58);
+    gap = nrow > 2 ? 6 : 10,
+    cw = cols === 5 ? 88 : 112, chh = nrow > 2 ? Math.floor((196 - (nrow - 1) * gap) / nrow) : 92, fs = Math.min(0.58, chh / 92 * 0.58);
   CH.forEach((q, i) => {
-    const col = i % cols, row = (i / cols) | 0, x = gx0 + col * (cw + 8), y = 74 + row * (chh + 10), on = i === opt.ch;
+    const col = i % cols, row = (i / cols) | 0, x = gx0 + col * (cw + 8), y = 74 + row * (chh + gap), on = i === opt.ch;
     panel(x, y, cw, chh, { fill: on ? UI.hl : '#fff', lw: on ? 4 : 2.5, shadow: on ? UI.p1 : null, sx: 5, sy: 5, seed: i * 7 });
     g.save();
     roughPath(slab(x, y, cw, chh), i * 7);
@@ -329,7 +330,7 @@ function uiCfg() {
     uiHit(x, y, cw, chh, () => { opt.ch = i; sel = 0; }, null);
   });
   // 性能
-  const sy = vs ? 284 : 286, sgap = vs ? 17 : 20, stat = (nm, v, max, y) => {
+  const sy = vs ? 288 : 290, sgap = vs ? 16 : 19, stat = (nm, v, max, y) => {
     T(nm, gx0, y, 12, UI.ink, 'left');
     g.fillStyle = UI.tone;
     g.fillRect(gx0 + 70, y - 9, 170, 9);
@@ -451,6 +452,16 @@ function hudSide(p, right) {
     const P = p.pup, S = p.ch.pupRaw, cr = P.st === 'crash';
     bar2(58, cr ? S.crash - P.crashT : P.hp, cr ? S.crash : S.hp, cr ? (fr % 20 < 10 ? '#7a5a8a' : '#4a3a5a') : P.hp < S.hp * 0.3 && fr % 16 < 8 ? '#ff8ac0' : S.color);
     T(cr ? '復活' : (S.label || '人形'), right ? W - 176 - 156 : 176 + 156, 65, 10, UI.ink, right ? 'right' : 'left');
+  }
+  if (p.ch.ht) {                                                    // 熱(ギア): たまるとオーバーヒート。オーバーヒート中は赤く点滅
+    const oh = p.oh > 0;
+    bar2(58, oh ? p.oh : p.heat || 0, oh ? p.ch.ht.lock : p.ch.ht.max, oh ? (fr % 12 < 6 ? '#ff3a1a' : '#ffb040') : (p.heat || 0) > p.ch.ht.max * 0.7 ? '#ff7a3a' : '#ffd040');
+    T(oh ? 'OVERHEAT' : 'HEAT', right ? W - 176 - 156 : 176 + 156, 65, 10, UI.ink, right ? 'right' : 'left');
+  }
+  if ((p.chill || 0) > 0 || p.frz > 0) {                            // 冷え(セツカの技を受けた側): 満タンで凍る
+    const fz = p.frz > 0;
+    bar2(70, fz ? CHILL.max : p.chill, CHILL.max, fz ? (fr % 12 < 6 ? '#ffffff' : '#9fe6ff') : p.chill >= CHILL.slow ? '#5ab8ff' : '#9fe6ff');
+    T(fz ? '凍結' : '冷え', right ? W - 176 - 156 : 176 + 156, 77, 10, UI.ink, right ? 'right' : 'left');
   }
   if (p.ch.aq && p.aq > 0) {                                        // 水まとい(ルリ): まとっている間だけ出る AQUA ゲージ
     const low = p.aq < 15;

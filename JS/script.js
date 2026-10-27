@@ -138,6 +138,7 @@ const buildMove = (c, k, m) => {
     bnc: m.bounce || null, flt: m.float ?? null, ub: !!m.unblockable, // unblockable: ガード・ジャストガード・しゃがみ受け流しができない(つかみ技)
     // 当たる(ガードされる)と自分が跳ね返る速さ / 空中で技の出始め〜持続の間、落ちる速さをこれ以下にする(浮いて止まる)
     fol: m.follow, veil: m.veil || 0, // 水まとい: 追撃の設定(follow) / ゲージ技で AQUA ゲージをためる量(veil)
+    chill: m.chill || 0, shatter: !!m.shatter, luck: m.luck || null, heat: m.heat || 0, vent: !!m.vent, warp: m.warp || null, heal: m.heal || 0, bloom: !!m.bloom, // 新しいキャラのしくみ(elements.js)
     ctr: m.counter ? buildMove(c, k + '_ctr', m.counter) : null }; // カウンター: 構えの間に打撃を受けると出る技(character.js 冒頭の【counter】) // 水まとい: 追撃の設定(follow) / ゲージ技で AQUA ゲージをためる量(veil)。projectile.js の「水まとい」 // 叩きつけ(地面でバウンド) / 吸血(与えたダメージの割合だけ回復) / 血の代償(出すと自分の体力が減る)
 };
 
@@ -258,7 +259,7 @@ const JUST_GUARD = { window: 4, gap: 5 };
 const jgWin = (o) => o.ch.jg ?? JUST_GUARD.window;
 const isJustGuard = (o) => o.st === 'shield' && !o.jgFree && o.t < jgWin(o);
 const isGuarding = (o) => o.st === 'shield' && (o.jgFree || o.t >= jgWin(o) + JUST_GUARD.gap);
-const dashInvuln = (o) => o.st === 'dash' && o.t < (o.bd ? DASH_INVULN.back : DASH_INVULN.front);
+const dashInvuln = (o) => o.st === 'dash' && !o.airDash && o.t < (o.bd ? DASH_INVULN.back : DASH_INVULN.front);
 // 空中受け流し: 空中でしゃがみ(下)を2回(14F 以内) か、空中受け流しのキー(設定。初期設定は X)。出てから startup F 後の active F の間に攻撃を受けると成功
 //   成功: 地上のしゃがみ受け流しと同じ(CROUCH_PARRY / キャラの crouchParry の倍率)。
 //         受けるダメージ・吹っ飛びが小さくなり、浮かない。攻撃した側は後隙が lag F 伸び、その技からキャンセルできない
@@ -274,7 +275,7 @@ const AIR_PARRY = { startup: 2, active: 8, whiff: 20, failLand: 16, window: 14 }
 const LOW_ATTACK = { reach: 12, top: 50 };
 const AIR_SLOTS = ['an', 'af', 'au', 'ad'];
 const isLowMove = (m) => !!m && (m.low ?? (m.rw > 0 && m.air !== true && !AIR_SLOTS.includes(m.k) && m.ry + m.rh >= -LOW_ATTACK.reach && m.ry >= -LOW_ATTACK.top));
-const STAT_MAP = { slowWalk: 'swk', speed: 'sp', jump: 'jp', airJumps: 'dj', jumpStartup: 'jsq', landLag: 'lgl', airLandLag: 'alg', gravityMul: 'gm', shield: 'shm', dashSpeed: 'dsh', knockbackTaken: 'wt', damageMul: 'dm', justGuardFrames: 'jg', shieldRegen: 'rg' };
+const STAT_MAP = { slowWalk: 'swk', speed: 'sp', jump: 'jp', airJumps: 'dj', jumpStartup: 'jsq', landLag: 'lgl', airLandLag: 'alg', gravityMul: 'gm', shield: 'shm', dashSpeed: 'dsh', knockbackTaken: 'wt', damageMul: 'dm', justGuardFrames: 'jg', shieldRegen: 'rg', airDash: 'adash', photosynthesis: 'photo' };
 const BODY_MAP = { limbW: 'lw', torso: 'tl', thigh: 'ul', shin: 'll', upperArm: 'ua', foreArm: 'la', headR: 'hr', torsoW: 'bw', scale: 'sc', pants: 'pn', belt: 'sh', sleeves: 'sl', foreColor: 'f2', handColor: 'hd', handR: 'hr2', shoes: 'so' };
 // 体の大きさ・服の色は drawing_character.js の CHARACTER_DRAWS[名前].body に書く (説明は setting.js の「body」)
 //   大きさはすべて px の数字。書かなかった項目は BODY_DEFAULT。前腕・手の色の省略時は肌の色(look.skin)
@@ -410,6 +411,16 @@ function buildChar(c) {
     // ground: air:'both' の技を地上で出したときだけ上書きする値(発生・launch・着地隙など。書き方は character.js 冒頭)
     if (m.ground) mv[k].gv = { ...mv[k], ...buildMove(c, k, { ...m, ...m.ground, box: { ...m.box, ...(m.ground.box || {}) } }), gnd: true };
   }
+  // 運だめし: 技に variants: [ {上書き}, ... ] を書くと、出すたびにどれか1つになる(elements.js)
+  for (const k in mv) {
+    const m = c.moves[k];
+    if (!m || !Array.isArray(m.variants)) continue;
+    mv[k].vars = m.variants.map((v) => {
+      const b = { ...buildMove(c, k, { ...m, ...v, box: { ...(m.box || {}), ...(v.box || {}) } }), rank: mv[k].rank, air: mv[k].air, cmd: mv[k].cmd, win: mv[k].win };
+      if (v.projectile || m.projectile) { b.proj = true; b.pjo = { ...(typeof m.projectile === 'object' ? m.projectile : {}), ...(typeof v.projectile === 'object' ? v.projectile : {}) }; }
+      return b;
+    });
+  }
   // ボルテージ技: 技に voltage: { need, use, ...上書き } を書くと、ゲージが need 以上たまっているときに強化版が出る
   for (const k in mv) {
     const m = c.moves[k];
@@ -419,7 +430,8 @@ function buildChar(c) {
     mv[k].vb = { ...mv[k], ...buildMove(c, k, { ...m, ...ov, box: { ...(m.box || {}), ...(ov.box || {}) } }), boosted: true, vneed: V.need ?? 50, vuse: V.use ?? V.need ?? 50 };
     if (ov.projectile) { mv[k].vb.pjo = { ...(mv[k].pjo || {}), ...ov.projectile }; mv[k].vb.proj = true; delete mv[k].vb._pj; }   // 強化版の弾(リナのサンダーボルト・MAX など)
   }
-  return { spg: spIn(c.sp), nm: c.name, ds: c.desc, vt: c.voltage ? { max: 100, perDamage: 1.6, guard: 3, hurt: 0.6, decay: 0, color: '#ffe14a', ...c.voltage } : null, dir: { ...DIR_DEFAULT, ...(c.look.dir || {}) }, col: c.look.color, sm: c.look.smooth || {}, ...remap(c.stats, STAT_MAP), pj: remap(c.projectile, PJ_MAP), pjRaw: c.projectile, cb: c.combos, zn: c.zones || {}, hm: Object.fromEntries(Object.entries(c.hitPoses || {}).map(([k, v]) => [k, poseIn(v)])), cg: { ...CROUCH_PARRY, ...(c.crouchParry || {}) }, ps: { ...DEFAULT_POSES, ...Object.fromEntries(Object.entries(c.poses || {}).map(([k, v]) => [k, k === 'walk' ? v : poseIn(v)])) }, th: throwIn(c.throw) || DEFAULT_THROW, ko: koIn(c.ko), rage: c.rage ? { hp: 0.35, dmg: 1.15, ...c.rage } : null, aq: c.aqua ? { max: 100, decay: 0.06, delay: 18, color: '#5fe0ff', ...c.aqua } : null, pupRaw: c.puppet ? { ...(typeof PUPPET_DEFAULT !== 'undefined' ? PUPPET_DEFAULT : {}), ...c.puppet } : null, mv };
+  return { spg: spIn(c.sp), nm: c.name, ds: c.desc, vt: c.voltage ? { max: 100, perDamage: 1.6, guard: 3, hurt: 0.6, decay: 0, color: '#ffe14a', ...c.voltage } : null, dir: { ...DIR_DEFAULT, ...(c.look.dir || {}) }, col: c.look.color, sm: c.look.smooth || {}, ...remap(c.stats, STAT_MAP), pj: remap(c.projectile, PJ_MAP), pjRaw: c.projectile, cb: c.combos, zn: c.zones || {}, hm: Object.fromEntries(Object.entries(c.hitPoses || {}).map(([k, v]) => [k, poseIn(v)])), cg: { ...CROUCH_PARRY, ...(c.crouchParry || {}) }, ps: { ...DEFAULT_POSES, ...Object.fromEntries(Object.entries(c.poses || {}).map(([k, v]) => [k, k === 'walk' ? v : poseIn(v)])) }, th: throwIn(c.throw) || DEFAULT_THROW, ko: koIn(c.ko), rage: c.rage ? { hp: 0.35, dmg: 1.15, ...c.rage } : null, aq: c.aqua ? { max: 100, decay: 0.06, delay: 18, color: '#5fe0ff', ...c.aqua } : null, pupRaw: c.puppet ? { ...(typeof PUPPET_DEFAULT !== 'undefined' ? PUPPET_DEFAULT : {}), ...c.puppet } : null,
+    ht: c.heat ? { max: 100, decay: 0.3, lock: 150, color: '#ff7a3a', ...c.heat } : null, mv };
 }
 const CH = CHARACTERS.map(buildChar),
   SY = CHARACTERS.map((c) => bodyLook(c)),
@@ -570,6 +582,7 @@ function applyHit(p, o, m, zn = 'torso', hy = null) {
     spGain(o, spOf(o).guard);
     if (spAtk) spGain(owner, spOf(owner).guardAtk);
     voltGain(p.ch ? p : p.own, 'guard', m.d);   // ガードされてもボルテージは少したまる
+    if (m.chill && typeof chillAdd === 'function') chillAdd(owner, o, m.chill, true);   // 凍結: ガードされても少し冷える(elements.js)
     p.noCancel = true; // ガードされた技からはキャンセルできない(当たったのを見てからキャンセルする=ヒット確認)
     o.sh -= Math.max(3, m.d) * 1.6;
     o.vx = p.f * m.kx * 0.4;
@@ -627,7 +640,9 @@ function applyHit(p, o, m, zn = 'torso', hy = null) {
   const repeatStun = Math.max(0.8, 1 - 0.15 * (o.cbMoves[m.k] - 1));
   o.cbn = o.cb;
   o.cbT = 70;
-  const d = Math.max(1, Math.round(m.d * ((p.ch && p.ch.dm) || 1) * rageMul(owner) * (p.crAtk ? CROUCH_ATTACK : 1) * Z.dmg * (cg ? cg.dmg : 1) * Math.max(m.ms ?? 0.5, 1 - 0.07 * (o.cb - 1))));   // ms = 補正の下限(超必殺技はコンボの最後でも威力が落ちにくい)
+  const LK = !cg && typeof luckRoll === 'function' ? luckRoll(m) : null,                 // 運(カルタ。elements.js)
+    shm = typeof shatterCheck === 'function' ? shatterCheck(p, o, m) : 1;               // 凍った相手: 氷が砕ける(セツカ)
+  const d = Math.max(1, Math.round(m.d * ((p.ch && p.ch.dm) || 1) * rageMul(owner) * (p.crAtk ? CROUCH_ATTACK : 1) * Z.dmg * (cg ? cg.dmg : 1) * (LK ? LK.mul : 1) * shm * Math.max(m.ms ?? 0.5, 1 - 0.07 * (o.cb - 1))) + (shm > 1 ? CHILL.shatterBonus : 0));   // ms = 補正の下限(超必殺技はコンボの最後でも威力が落ちにくい)
   const hp0 = o.hp;
   o.hp = Math.max(0, o.hp - d);
   msHit(owner, o, hp0 - o.hp, apOk ? 0 : o.cb, mid); // 試合の記録: ダメージ・コンボ・命中
@@ -671,6 +686,8 @@ function applyHit(p, o, m, zn = 'torso', hy = null) {
     o.cb = 0;                       // やられていないので、コンボにも数えない
     o.cbMoves = {};
   }
+  if (LK) luckApply(LK, owner, o, o.x, cy);                        // 運の効果(回復・SP・硬直)
+  if (m.chill && !apOk && typeof chillAdd === 'function') chillAdd(owner, o, m.chill * (cg ? 0.5 : 1), false);   // 凍結: 冷えがたまる・凍る
   hitBounce(p, m);                  // bounce: 当てた側が跳ね返る(シノの空中二段蹴りなど)
   hs = cg ? cg.stop : (m.hst ?? Math.min(HIT_STOP.hitMax, Math.round(HIT_STOP.hitBase + d * HIT_STOP.hitPerDamage))) + (Z.stop || 0);
   const c = fxColor(m) || '#ff8',
@@ -961,7 +978,13 @@ function begin(p, k, fromCrouch = false) {
   p.rcExtra = 0; //       受け流されたら後隙が伸びる分(F)
   p.cx = 0;
   p.crAtk = !!fromCrouch; // しゃがみから出した技(ダメージ ×CROUCH_ATTACK)
+  if (p.ch.ht && typeof heatBlock === 'function') k = heatBlock(p, k);   // オーバーヒート中は熱の技が出ない(ギア。elements.js)
   p.mv = p.ch.mv[k];
+  if (p.mv.vars) {                                  // 運だめし: どれか1つ(ゲーム用の乱数で選ぶ)
+    p.mv = p.mv.vars[(R() * p.mv.vars.length) | 0];
+    fx.push({ k: 'txt', text: p.mv.nm, x: p.x, y: p.y - 175, t: 36, l: 36, c: '#ffe14a', s: 17 });
+  }
+  if (p.ch.ht && typeof heatAdd === 'function') heatAdd(p, p.mv);
   if (p.mv.gv && p.y >= GY) p.mv = p.mv.gv; // 地上版がある技を地上で出した
   if (p.mv.vb && (p.volt || 0) >= p.mv.vb.vneed) {  // ボルテージがたまっている → 強化版(ゲージを使う)
     p.volt -= p.mv.vb.vuse;
@@ -1034,6 +1057,7 @@ function step(p, i, o, S) {
     if (isPJMove(m) && p.t === m.st) spawnProjectiles(p, m, o); // 弾を撃つ(見た目・軌道は projectile.js)
     if (p.t === m.st + 1) atkFx(p, m);
     if (m.flt != null && p.y < GY && p.t <= m.st + m.ac) p.vy = Math.min(p.vy, m.flt);   // float: 空中で技を出している間、ふわっと止まる
+    if (p.t === m.st && (m.warp || m.heal || m.bloom) && typeof elemOnStartup === 'function') elemOnStartup(p, m, o);   // ワープ・回復・開花(elements.js)
     const launch = m.launch;
     if (p.t === m.st && launch) {                     // 移動ロック中に出した技でも動く(launch は技そのものの動き)
       if (launch.x != null) p.vx = p.f * launch.x;
@@ -1127,6 +1151,8 @@ function step(p, i, o, S) {
       takeoff = true;
       dust(p.x, GY, 4);
     }
+  } else if (p.st === 'dash' && p.airDash && typeof airDashStep === 'function') {
+    airDashStep(p, i);                       // 空中ダッシュ(elements.js)
   } else if (p.st === 'dash') {
     p.t++;
     p.vx = p.dd * (c.dsh || 9) * Math.max(0.2, 1 - p.t / 16);
@@ -1161,11 +1187,14 @@ function step(p, i, o, S) {
       p.st = 'apar';
       p.t = 0;
       fx.push({ k: 'ring', x: p.x, y: p.y - 60, r: 55, t: AIR_PARRY.startup + AIR_PARRY.active, l: AIR_PARRY.startup + AIR_PARRY.active, c: '#9ff' });
+    } else if (i.dh && air && c.adash && (p.adn | 0) < c.adash && !p.moveLock && typeof airDashStart === 'function') {
+      airDashStart(p, i.dh);                // 空中ダッシュ(ハヤテ。elements.js)
     } else if (i.dh && !air && !p.moveLock) {
       p.st = 'dash';
       p.t = 0;
       p.dd = i.dh;
       p.bd = i.dh * p.f < 0;
+      p.airDash = false;
       dust(p.x, GY, 5);
     } else if (i.sh && !air) {
       p.st = 'shield';
@@ -1192,8 +1221,8 @@ function step(p, i, o, S) {
   if (!air && p.st !== 'dash') {
     const tx =
       p.st !== 'idle' ? 0
-        : p.sw ? moveDir * c.sp * (c.swk ?? SLOW_WALK) * (moveDir * p.f < 0 ? 0.7 : 1)   // ゆっくり歩き
-        : !i.d ? moveDir * c.sp * (p.run > 14 ? 1.6 : 1) * (moveDir * p.f < 0 ? 0.7 : 1)
+        : p.sw ? moveDir * c.sp * chillSlow(p) * (c.swk ?? SLOW_WALK) * (moveDir * p.f < 0 ? 0.7 : 1)   // ゆっくり歩き
+        : !i.d ? moveDir * c.sp * chillSlow(p) * (p.run > 14 ? 1.6 : 1) * (moveDir * p.f < 0 ? 0.7 : 1)   // chillSlow: 冷えで遅くなる(elements.js)
         : 0;
     p.vx += (tx - p.vx) * S.acc;
   } else if (p.st === 'idle') p.vx += (moveDir * c.sp - p.vx) * 0.06;
@@ -1214,6 +1243,8 @@ function step(p, i, o, S) {
     p.y = GY;
     p.vy = 0;
     p.dj = 0;
+    p.adn = 0;
+    if (p.airDash) { p.airDash = false; if (p.st === 'dash') { p.st = 'idle'; p.t = 0; } }
     p.spike = 0;
     if (wa) {
       // 着地隙: 空中技のあと=技の landLag(なければ airLandLag) / 通常ジャンプ=landLag
@@ -2561,6 +2592,15 @@ function cvDraw() {
            ...(m.drain ? [['吸血', '与えたダメージの' + Math.round(m.drain * 100) + '%回復']] : []),
            ...(m.bc ? [['血の代償', '出すと体力 -' + m.bc]] : []),
            ...(m.veil ? [['水まとい', 'AQUA ゲージ +' + m.veil]] : []),
+           ...((m.chill || ((m.proj || m.k === 's') && pjSpec(c, m).chill)) ? [['凍結', '冷え +' + (m.chill || pjSpec(c, m).chill) + '(100 で凍る)']] : []),
+           ...(m.shatter ? [['砕氷', '凍った相手にダメージ ×' + CHILL.shatterMul + ' +' + CHILL.shatterBonus]] : []),
+           ...(m.heat ? [['熱', '+' + m.heat + '(100 でオーバーヒート)']] : []),
+           ...(m.vent ? [['排熱', '熱を 0 にする']] : []),
+           ...((m.luck || ((m.proj || m.k === 's') && pjSpec(c, m).luck)) ? [['運', (m.luck || pjSpec(c, m).luck) === 'dice' ? 'サイコロでダメージ ×0.5〜×2.0' : '♠ダメージ×1.5 / ♥体力+4 / ♦SP+10 / ♣硬直+10F']] : []),
+           ...(m.warp ? [['移動', m.warp === 'swap' ? '相手と位置を入れかえる' : '相手の後ろへ瞬間移動']] : []),
+           ...(m.heal ? [['回復', '体力 +' + m.heal]] : []),
+           ...(m.bloom ? [['開花', '自分の芽をすべてはじけさせる']] : []),
+           ...(m.vars ? [['運だめし', m.vars.map((v) => v.nm.split(':').pop()).join(' / ') + ' のどれか']] : []),
            ...(m.ctr ? [['カウンター', '構え中に打撃→打ち返し ' + m.ctr.d + 'ダメ(無敵' + m.ctr.inv + 'F)・飛び道具は跳ね返す']] : []),
            ...(m.bnc ? [['跳ね返り', '当たる・ガードされると自分が跳ね返る']] : []),
            ...(m.ub ? [['ガード不能', 'シールド・しゃがみ受け流しで防げない(跳べば避けられる)']] : []),
@@ -2932,6 +2972,7 @@ function upd() {
   updateProjectiles(A, B); // 弾を動かす・当てる・軌跡(projectile.js)
   voltStep(A);
   voltStep(B);
+  if (typeof elemTick === 'function') elemTick(A, B);   // 凍結・熱・光合成(elements.js)
   if (opt.st == 3) {
     if (++G.t >= 300) {
       G.t = 0;
@@ -3576,6 +3617,7 @@ function draw() {
     if (typeof drawPuppets === 'function') drawPuppets('body'); // パペット(ロロ)の体(puppet.js)
     drawF(B);
     drawF(A);
+    if (typeof drawElementsOver === 'function') drawElementsOver(); // 凍ったキャラの氷(elements.js)
     if (typeof drawPuppets === 'function') drawPuppets('string'); // 操り糸(キャラの手からパペットへ)
     PJ.forEach(drawProjectile); // 弾の絵(projectile.js)
     if (opt.mode === 'train') trainingDrawWorld(); // 食らい判定・攻撃判定(training.js)
@@ -3609,6 +3651,10 @@ function draw() {
         const full = p.volt >= V.max;
         bar(x, 48, 120, p.volt || 0, V.max, full && fr % 20 < 10 ? '#fff' : V.color, rr);
         T('VOLT', rr ? x + 116 : x + 4, 64, 12, '#222', rr ? 'right' : 'left');
+      }
+      for (const [p, x, rr] of [[A, 190, 0], [B, 650, 1]]) {   // 熱(ギア)・冷え(凍結)のゲージ(elements.js)
+        if (p.ch.ht) bar(x, 48, 120, p.oh > 0 ? p.ch.ht.max : p.heat || 0, p.ch.ht.max, p.oh > 0 && fr % 12 < 6 ? '#ff3a1a' : '#ff9a3a', rr);
+        if ((p.chill || 0) > 0 || p.frz > 0) bar(x, 74, 120, p.frz > 0 ? CHILL.max : p.chill, CHILL.max, '#9fe6ff', rr);
       }
       spBar(A, 30, 0);                                   // SP ゲージ(ゲージ技・超必殺技)
       spBar(B, 930, 1);

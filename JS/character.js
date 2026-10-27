@@ -88,6 +88,11 @@
 //              motion: { reach(つかみに行く) hold(持ち上げ) rel(投げる瞬間) held(つかまれた相手) }(姿勢配列。書かない物はふつうの投げの姿勢)
 // 【counter】 カウンター。技に counter: { 技の項目 } を書くと、その技の持続の間に打撃を受けたとき、ダメージを受けずに counter の技が出る(ルリの逆流)
 //   飛び道具を受けたときは跳ね返す(ジャストガードと同じ)。counter の技の見た目は motions の「技の名前_ctr」(例: c2_ctr)。invincible で無敵を付けられる
+// 【新しい5人のしくみ】(処理は elements.js、説明は game_spec.js の 15-2章)
+//   技: chill=相手を冷やす(100 で凍る) shatter=凍った相手に大ダメージ heat=熱がたまる vent=熱を0に luck='suit'/'dice'=運だめし
+//       warp='behind'/'swap'=瞬間移動・位置の入れかえ heal=体力回復 bloom=自分の芽を開花 variants=[{...}]=出すたびにどれか1つ
+//   キャラ: stats.airDash=空中ダッシュの回数 stats.photosynthesis={ delay, rate }=立ち止まると回復 heat={ max, decay, lock, color }
+//   弾: hits / hitEvery=何回も当たる chill / luck。軌道 path: 'seed'(落ちると芽の罠) / 'rise'(止まって浮き上がる竜巻)
 // 【rage】 狂化。rage: { hp: 0.35, dmg: 1.15 } = 体力が35%以下になると与えるダメージ ×1.15、体から血の霧が立ちのぼる(バーサク)
 // 【crouchParry】 しゃがみ受け流しの性能をキャラごとに上書き(省略可)
 // 【poses】 jumpSquat=ジャンプ前隙 / landing=着地隙 / crouch=しゃがみ(受け流し中も) は別々のモーション
@@ -1349,6 +1354,480 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
         effect: { preset: 'curse', strength: 2, start: [{ type: 'orb', at: 'body', r: 50, duration: 8, follow: true, color: '#8a3ad0' }], attack: [{ type: 'sigil', at: 'feet', r: 70, flat: true, duration: 50 }, { type: 'text', text: 'Marionette', at: 'head', delay: 10 }] },
         puppet: { cmd: 'string', revive: true, blink: 8, behind: 70, startup: 6, active: 42, recovery: 20, damage: 4, hits: 8, hitInterval: 5, hitStop: 4, minScale: 0.75, knockX: 0, knockY: -2, hitstun: 30,
           effect: { color: '#a050e0', color2: '#ffffff', attack: [{ type: 'flash', at: 'body', r: 120, blend: 'add', duration: 14 }], hit: [{ type: 'cross', r: 20 }, { type: 'sigil', r: 18, duration: 10 }] } } },
+    },
+  },
+  // ============================================================
+  //  ここから下は 新しい5人(風・氷・草・鋼・自由)。しくみの説明は elements.js の先頭
+  // ============================================================
+  {
+    name: 'ハヤテ',
+    desc: '風の舞い手:3段ジャンプと空中ダッシュ・戻る鎌鼬',
+    // 性能  地上戦は軽く、空中にいる時間が長い。ジャンプが3回(airJumps 2)、空中で ←← / →→ の空中ダッシュ(1回)。
+    //   落ちるのが遅く(gravityMul 0.85)、空中技は着地隙が小さい。体力・シールドは少なめ。鉄扇(てっせん)を持つ
+    stats: { hp: 100, jumpStartup: 3, landLag: 3, airLandLag: 6, speed: 4.8, jump: -13, airJumps: 2, gravityMul: 0.9, dashSpeed: 10, shield: 55, airDash: 1 },
+    ko: { type: 'fly', vx: 6, vy: -13, gravity: 0.7, spin: -4.2, bounce: 0, slide: 0.9, air: 'tuck', lie: 'back', dust: '#d8fff2' }, // 風に巻かれて高く舞い、ゆっくり落ちてあお向け
+    sp: { max: 100, time: 0.011, hit: 0.6, combo: 1.2, hurt: 0.35, color: '#7fe8c8' },
+    // 飛び道具(A): 鎌鼬(かまいたち)。回りながら飛んで戻ってくる風の刃。行きと帰りで2回まで当たる
+    projectile: { speed: 11, damage: 6, radius: 14, life: 70, hits: 2, hitEvery: 14, knockX: 3, knockY: -3, hitstun: 20, look: 'windBlade', path: { type: 'boomerang', back: 0.3 }, from: { x: 46, y: -82 } },
+    look: { smooth: { atk: 0.7, move: 0.34 }, color: '#4fbfa0', skin: '#f4d2b0' },
+    throw: {
+      reach: [0.35, 1.5, 0.3, 0, 1.4, 0.3, 0, 0.8, -0.4, -0.5, 0.3, 10],
+      name: '投げ', box: { x: 0, y: -85, w: 60, h: 75 },
+      startup: 6, active: 3, whiff: 22, release: 30, total: 56,
+      f: { name: '風送り', damage: 9, vx: 12, vy: -7, hitstun: 26, effect: { preset: 'gale', hit: [{ type: 'gust', r: 46, count: 4 }, { type: 'lines', count: 4, at: 'hit', length: 90 }] } },
+      b: { name: '追い風投げ', damage: 9, vx: 11, vy: -7, hitstun: 26, leap: 40, effect: { preset: 'gale', hit: [{ type: 'gust', r: 46, count: 4 }] } },
+      u: { name: '竜巻上げ', damage: 7, vx: 1, vy: -17, hitstun: 32, swing: 1, effect: { preset: 'cyclone', hit: [{ type: 'tornado', at: 'hit', r: 40, length: 160, duration: 22 }] } },
+      d: { name: '颪(おろし)落とし', damage: 10, vx: 3, vy: -6, hitstun: 30, leap: 60, spike: 4, effect: { preset: 'gale', hit: [{ type: 'ring', flat: true, r: 70, width: 5 }, { type: 'gust', r: 50, count: 5 }, { type: 'shake', duration: 8, power: 5 }] } },
+    },
+    hitPoses: { head: [-0.3, 0.8, 1.8, 0, 0.6, 1.9, 0, 0.4, -0.6, -0.4, 0.4, 0] },
+    poses: {
+      idle: [0.1, 0.5, 0.9, 0.5, 0.25, 1.6, 0, 0.5, -0.5, -0.45, 0.35, 0, , , , , 1.6], // 待機(扇を腰の前に低く構え、体を開く)
+      walk: [0.14, 0.4, 0.75, 0.85],
+      guard: [0.05, 1.3, 2.2, 0.4, 0.9, 2.3, 0, 0.35, -0.45, -0.3, 0.35, 0],
+      crouch: [0.3, 1.0, 1.5, 0.4, 0.5, 1.8, 0, 1.0, -1.5, -1.0, 1.3, 0],
+      jumpSquat: [0.4, 0.1, 1.0, 0, -0.1, 1.0, 0, 1.15, -1.75, -1, 1.75, -2],
+      landing: [0.4, 1.3, 0.5, 0, 0.8, 0.6, 0, 1.2, -1.6, -0.5, 0.9, 4],
+      dashF: [0.7, -0.6, 1.0, 0.3, -0.4, 1.0, 0, 1.0, -1.2, -0.9, 0.4, 0], // 前かがみで低く滑る(風に乗る)
+      dashB: [-0.3, 0.8, 1.6, 0, 0.4, 1.9, 0, 0.7, -0.9, 0.1, -0.4, 0],
+      jumpUp: [-0.15, 2.6, 0.5, 0.3, 1.8, 0.8, 0, 1.1, -1.7, 0.3, -0.9, 0], // 扇を高く掲げて舞い上がる
+      fall: [0.1, 1.8, 0.8, 0, 1.4, 0.8, 0, 0.6, -1.0, -0.2, -0.6, 0],     // 両手を広げてふわりと落ちる
+    },
+    // 右腕(手前)= 鉄扇を持つ手 / 左腕(奥)= 風を放つ手
+    motions: {
+      n: { w: [-0.1, 0.2, 2.0, 0.6, 0.4, 1.6, 0, 0.4, -0.4, -0.3, 0.3, -4], s: [0.2, 1.5, 0.2, -0.3, 0.3, 1.7, 0, 0.5, -0.4, -0.4, 0.35, 12] },                 // 扇打ち: 手首を返して扇の縁で打つ
+      f: { w: [-0.35, -0.6, 1.2, 0.4, 0.8, 1.4, 0, 0.6, -0.6, -0.5, 0.5, -8], s: [0.45, 1.9, 0.3, -0.4, -0.4, 1.0, 0, 0.9, -0.3, -0.8, 0.3, 20] },              // 風薙ぎ: 後ろから大きく横へ払う
+      b: { w: [0.2, 1.6, 0.4, 0, 0.6, 1.5, 0, 0.5, -0.6, -0.3, 0.5, 4], s: [-0.3, 2.2, 0.2, 0.3, 0.2, 1.3, 0, 0.3, -0.3, -0.6, 0.8, -12] },                    // 逆風: 跳び退きながら扇を振り上げる
+      u: { w: [0.2, 0.6, 1.4, 0, 0.5, 1.5, 0, 0.6, -1.0, -0.4, 0.9, 0], s: [-0.8, 2.4, 0.3, 0, 1.8, 0.6, 0, 2.5, 0.0, 0.3, -0.4, 4] },                         // 旋風脚: 体を倒して足を高く振り上げる
+      d: { w: [0.4, 0.3, 1.6, 0, 0.5, 1.5, 0, 1.1, -1.6, 0.2, -1.0, -2], s: [0.6, 1.2, 0.1, -0.3, 0.4, 1.4, 0, 1.4, -1.4, -0.8, -1.0, 14] },                   // 吹き払い: 低くしゃがんで足元を払う
+      da: { w: [0.5, -0.8, 2.2, 0, 0.9, 1.2, 0, 1.2, -0.9, -0.7, 0.6, -12], s: [0.8, 1.55, 0.05, 0, -0.5, 0.8, 0, 1.0, -0.2, -1.0, 0.4, 26] },               // 疾風突き: 閉じた扇で突き抜ける
+      an: { w: [-0.5, -0.5, 1.0, 0.4, 0.4, 1.2, 0, 0.9, -1.4, 0.3, -1.0, -6], s: [0.4, 2.0, 0.2, -0.3, -0.6, 1.0, 0, 0.7, -1.0, -0.2, -0.7, 10] },           // 舞扇
+      af: { w: [0.3, 0.6, 1.5, 0, 0.6, 1.5, 0, 1.2, -1.6, 0.3, -1.0, 0], s: [-0.4, 1.6, 0.5, 0, 2.2, 0.4, 0, 1.6, 0.0, -0.9, -0.1, 8] },                       // 風車: 両脚を開いて回る
+      au: { w: [0.3, 0.5, 1.6, 0.3, 0.4, 1.5, 0, 1.0, -1.4, 0.4, -1.0, 0], s: [-0.5, 3.0, 0.1, 0.4, 1.8, 0.8, 0, 1.4, -0.4, 0.2, -0.8, 2] },                  // 昇り風: 頭上へ弧を描く
+      ad: { w: [0.1, 1.8, 0.8, 0, 1.5, 0.9, 0, 0.9, -1.4, 0.4, -1.0, 0], s: [-0.5, 0.8, 1.2, 0, 0.4, 1.4, 0, 1.2, 0.05, 0.2, -1.3, 16] },                     // 風穿ち: 斜め下へ蹴り込む
+      s: { w: [-0.3, -1.0, 1.8, 0.5, 0.7, 1.5, 0, 0.5, -0.5, -0.4, 0.4, -8], s: [0.35, 1.7, 0.1, -0.6, -0.3, 1.2, 0, 0.8, -0.3, -0.6, 0.3, 14] },            // 鎌鼬: 扇を横に振り抜いて風の刃を飛ばす
+      sf: { w: [0.2, 0.4, 1.4, 0.3, 0.4, 1.4, 0, 0.9, -0.9, -0.5, 0.5, -6], s: [0.5, 2.2, 0.3, -0.3, 2.0, 0.3, 0, 1.1, -0.4, -0.8, 0.4, 22] },               // 颶風連舞: 両手を広げて回りながら進む
+      sb: { w: [0.3, 0.5, 1.8, 0, 0.5, 1.8, 0, 1.0, -1.6, -0.3, 1.0, 0], s: [-0.6, 2.4, 0.4, 0, 2.2, 0.5, 0, 1.4, -1.6, 0.6, -1.2, -8] },                     // 風隠れ: 後ろの空へ跳ぶ
+      su: { w: [0.3, 0.4, 1.8, 0, 0.4, 1.6, 0, 1.0, -1.5, 0.2, -1.1, 0], s: [-0.3, 3.1, 0.05, 0.2, 0.6, 0.5, 0, 0.3, -0.2, -0.3, -0.4, 6] },                 // 昇龍風: 扇を突き上げて竜巻と昇る
+      sd: { w: [-0.2, 2.8, 0.4, 0.3, 1.0, 1.2, 0, 0.5, -0.4, -0.4, 0.4, -4], s: [0.5, 0.9, 0.1, -0.4, 0.3, 1.4, 0, 0.9, -0.9, -0.6, 0.5, 14] },                // 大旋風: 振りかぶった扇を振り下ろす
+      c1: { w: [0.3, 1.8, 0.2, -0.4, 0.5, 1.5, 0, 0.8, -0.5, -0.6, 0.4, 10], s: [-0.3, -0.4, 1.6, 0.6, 1.2, 0.6, 0, 0.4, -0.5, -0.2, 0.4, -6] },              // 巻き風: 前の扇を手前へあおぐ
+      c2: { w: [0.0, 0.8, 1.6, 0, 0.6, 1.6, 0, 1.0, -1.6, 0.2, -1.0, 0], s: [0.9, 0.3, 1.3, 0, -0.3, 1.4, 0, 1.6, 0.05, 1.3, -0.4, 18] },                     // 空舞い: 水平に滑空して蹴る
+      gx: { w: [-0.3, 0.2, 2.2, 0.4, 0.3, 2.2, 0, 0.5, -0.5, -0.4, 0.4, -10], s: [0.35, 1.6, 0.05, -0.2, 1.5, 0.05, 0, 0.9, -0.3, -0.7, 0.3, 16] },          // 天つ風: 両手で押し出す
+      sx: { w: [0.3, 2.8, 0.3, 0.3, 2.6, 0.4, 0, 0.9, -1.4, -0.3, 1.0, 0], s: [0.6, 1.4, 0.1, -0.4, -0.4, 1.0, 0, 1.0, -0.3, -0.9, 0.4, 24] },                 // 神風・八重嵐
+    },
+    combos: ['Z→→Z→A 鎌鼬 (戻る刃でもう一度)', 'ジャンプ→空中ダッシュ→空中→Z (3段ジャンプで高い所から)', '↓Z→↓↘→+A 巻き風 (遠くから引き寄せる)', '↓A 大旋風→ジャンプして空中Z (竜巻で浮いた相手を追う)'],
+    moves: {
+      n: { name: '扇打ち', startup: 4, active: 2, recovery: 6, damage: 5, knockX: 3, knockY: -2, hitstun: 15, effect: { preset: 'gale', size: 0.7 }, box: { x: 26, y: -82, w: 50, h: 26 } },
+      f: { name: '風薙ぎ', startup: 8, active: 4, recovery: 12, damage: 8, knockX: 7, knockY: -3, hitstun: 20, effect: { preset: 'gale', attack: [{ type: 'crescent', width: 9, span: 2.8, color: '#c8fff0' }, { type: 'gust', r: 50, count: 4 }] }, box: { x: 30, y: -96, w: 82, h: 50 } },
+      b: { name: '逆風', startup: 6, active: 4, recovery: 12, damage: 5, knockX: 9, knockY: -2, hitstun: 18, launch: { x: -6 }, effect: { preset: 'gale', attack: [{ type: 'gust', r: 46, count: 4 }, { type: 'lines', count: 3, at: 'body', length: 70 }] }, box: { x: 20, y: -92, w: 62, h: 52 } }, // 下がりながら突き放す
+      u: { name: '旋風脚', startup: 5, active: 5, recovery: 15, damage: 8, knockX: 2, knockY: -11, hitstun: 24, turn: [{ at: 'startup', body: 3 }, { at: 'active', body: -2 }, { at: 'recovery', body: 1 }], effect: { preset: 'gale', attack: [{ type: 'crescent', angle: -1, width: 10, span: 3 }, { type: 'gust', at: 'body', r: 44, count: 3 }] }, box: { x: -20, y: -150, w: 70, h: 95 } },
+      d: { name: '吹き払い', startup: 5, active: 3, recovery: 10, damage: 6, knockX: 3, knockY: -1, hitstun: 22, effect: { preset: 'gale', attack: [{ type: 'wave', at: 'feet', x: 40, width: 4 }, { type: 'gust', at: 'feet', x: 50, y: -10, r: 30, count: 2 }] }, box: { x: 28, y: -24, w: 62, h: 24 } },
+      da: { name: '疾風突き', startup: 6, active: 8, recovery: 13, damage: 6, hits: 2, hitInterval: 4, hitStop: 5, knockX: 4, knockY: -3, hitstun: 22, launch: { x: 13 }, effect: { preset: 'gale', attack: [{ type: 'lines', count: 5, at: 'body', length: 110 }, { type: 'gust', at: 'body', r: 40, count: 3 }] }, box: { x: 25, y: -82, w: 62, h: 50 } },
+      an: { name: '舞扇', landLag: 4, startup: 4, active: 7, recovery: 9, damage: 4, knockX: 2, knockY: -3, hitstun: 16, effect: { preset: 'gale', size: 0.8 }, box: { x: -10, y: -88, w: 72, h: 52 } },
+      af: { name: '風車', landLag: 7, startup: 6, active: 10, recovery: 10, damage: 4, hits: 3, hitInterval: 3, hitStop: 4, knockX: 2, knockY: -3, hitstun: 16, turn: [{ at: 'startup', body: 3 }, { at: 9, body: -3 }, { at: 13, body: 3 }, { at: 'recovery', body: 1 }], effect: { preset: 'gale', attack: [{ type: 'gust', at: 'body', r: 50, count: 5 }] }, box: { x: -10, y: -100, w: 90, h: 80 } }, // 3回当たる回転蹴り
+      au: { name: '昇り風', landLag: 7, startup: 5, active: 5, recovery: 10, damage: 5, knockX: 2, knockY: -9, hitstun: 20, effect: { preset: 'gale', attack: [{ type: 'crescent', angle: -1, width: 8, span: 3 }] }, box: { x: -25, y: -150, w: 70, h: 80 } },
+      ad: { name: '風穿ち', landLag: 10, startup: 7, active: 10, recovery: 12, damage: 7, knockX: 3, knockY: 6, hitstun: 22, launch: { x: 6, y: 11 }, effect: { preset: 'gale', attack: [{ type: 'lines', count: 4, at: 'body', length: 80 }], hit: [{ type: 'gust', r: 40, count: 4 }, { type: 'ring', flat: true, r: 40 }] }, box: { x: 0, y: -42, w: 60, h: 52 } },
+      s: { name: '鎌鼬', startup: 10, active: 3, recovery: 18, damage: 0, knockX: 0, knockY: 0, hitstun: 0, effect: { preset: 'gale', attack: [{ type: 'gust', at: 'front', r: 34, count: 3 }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      sf: { name: '颶風連舞', startup: 9, active: 18, recovery: 20, damage: 4, hits: 4, hitInterval: 4, hitStop: 4, knockX: 2, knockY: -2, hitstun: 22, launch: { x: 12 },
+        turn: [{ at: 'startup', body: 3 }, { at: 12, body: -3 }, { at: 16, body: 3 }, { at: 20, body: -3 }, { at: 24, body: 3 }, { at: 'recovery', body: 1 }],
+        effect: { preset: 'cyclone', attack: [{ type: 'tornado', at: 'body', y: 60, r: 40, length: 130, duration: 20, follow: true }, { type: 'gust', at: 'body', r: 56, count: 5, duration: 18, follow: true }] }, box: { x: 0, y: -100, w: 82, h: 86 } },
+      // 風隠れ: 出始め無敵で後ろの空へ跳ぶ(当たり判定なし)。そのまま空中ダッシュ・空中技につなげる
+      sb: { name: '風隠れ', startup: 3, active: 6, recovery: 12, damage: 0, knockX: 0, knockY: 0, hitstun: 0, invincible: 12, launch: { x: -7, y: -12 }, effect: { preset: 'gale', start: [{ type: 'gust', at: 'body', r: 50, count: 5, duration: 14 }], attack: [{ type: 'lines', count: 4, at: 'body', length: 90 }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      su: { name: '昇龍風', startup: 5, active: 12, recovery: 24, damage: 4, hits: 4, hitInterval: 3, hitStop: 4, invincible: 5, knockX: 2, knockY: -6, hitstun: 26, launch: { x: 3, y: -13 }, effect: 'cyclone', box: { x: -25, y: -150, w: 80, h: 150 } },
+      // 大旋風: 前に竜巻を置く(何回も当たって浮かせる。ゆっくり止まって少しずつ上がる)
+      sd: { name: '大旋風', startup: 14, active: 3, recovery: 22, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
+        projectile: { speed: 6, damage: 2, radius: 30, life: 75, hits: 5, hitEvery: 9, knockX: 0.5, knockY: -4.5, hitstun: 18, look: 'tornado', path: { type: 'rise', decel: 0.92, lift: 0.5 }, from: { x: 60, y: -60 } },
+        effect: { preset: 'gale', attack: [{ type: 'gust', at: 'front', r: 44, count: 4 }] } },
+      // 巻き風: 遠くの相手を風で手前へ引き寄せる(knockX がマイナス)
+      c1: { name: '巻き風', command: '↓↘→+A', startup: 10, active: 6, recovery: 15, damage: 6, knockX: -9, knockY: -2, hitstun: 30, rank: 4,
+        effect: { preset: 'gale', attack: [{ type: 'gust', r: 70, count: 6, width: 3 }, { type: 'lines', at: 'hitbox', count: 5, length: 140 }] }, box: { x: 40, y: -92, w: 170, h: 72 } },
+      // 空舞い: 空中で真横に滑空して蹴る(空中だけ)
+      c2: { name: '空舞い', command: '↓↘→+Z', air: true, startup: 5, active: 14, recovery: 12, damage: 7, knockX: 6, knockY: -4, hitstun: 22, rank: 5, landLag: 10, launch: { x: 13, y: -1 }, float: 0,
+        effect: { preset: 'gale', attack: [{ type: 'lines', count: 5, at: 'body', length: 110 }, { type: 'gust', at: 'body', r: 44, count: 3, follow: true }] }, box: { x: 10, y: -70, w: 72, h: 46 } },
+      // 天つ風: 全身で巨大な突風を起こし、相手を画面の端まで吹き飛ばす(ガードしても大きく押す)
+      gx: { name: '天つ風', cost: 25, startup: 9, active: 6, recovery: 22, damage: 6, knockX: 18, knockY: -3, hitstun: 24,
+        effect: { preset: 'gale', strength: 2, attack: [{ type: 'gust', r: 120, count: 7, width: 4, duration: 20 }, { type: 'lines', at: 'body', count: 8, length: 200 }, { type: 'shake', duration: 8, power: 3 }] }, box: { x: 20, y: -112, w: 260, h: 112 } },
+      // 神風・八重嵐(やえあらし): 巨大な竜巻に相手を閉じ込めて10回切り刻む
+      sx: { name: '神風・八重嵐', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 10, active: 40, recovery: 30, damage: 3, hits: 10, hitInterval: 4, hitStop: 3, knockX: 0.5, knockY: -3.5, hitstun: 30, launch: { x: 9 },
+        effect: { preset: 'cyclone', strength: 2, attack: [{ type: 'tornado', at: 'hitbox', y: 100, r: 90, length: 260, duration: 44 }, { type: 'gust', at: 'hitbox', r: 110, count: 8, duration: 40 }, { type: 'text', text: '八重嵐', at: 'head', delay: 10 }], hit: [{ type: 'cross', r: 22 }] },
+        box: { x: 20, y: -200, w: 140, h: 200 } },
+    },
+  },
+  {
+    name: 'セツカ',
+    desc: '氷の槍使い:長い槍で冷やし、凍らせて砕く',
+    // 性能  槍が長く、通常技のリーチは全キャラでいちばん長いが、出は少し遅い。当てると相手の「冷え」がたまり(chill)、
+    //   半分たまると相手の動きが遅くなり、満タンで凍りつく。凍った相手には「砕氷」「ダイヤモンドダスト」(shatter)が大ダメージ
+    stats: { hp: 100, jumpStartup: 4, landLag: 3, airLandLag: 9, speed: 3.6, jump: -13, airJumps: 1, dashSpeed: 8.5, shield: 65 },
+    ko: { type: 'collapse', drift: 1.2, keys: [[12, 'stagger'], [16, 'kneel'], [18, 'fallBack']], lie: 'back', thud: 14, dust: '#e0f6ff' }, // 槍を落としてひざをつき、静かに倒れる
+    sp: { max: 100, time: 0.013, hit: 0.55, combo: 0.8, hurt: 0.4, color: '#8fdcff' },
+    projectile: { speed: 13, damage: 6, radius: 12, life: 80, knockX: 5, knockY: -2, hitstun: 20, chill: 18, look: 'iceLance', path: { type: 'accel', start: 0.25, accel: 0.5 }, from: { x: 50, y: -80 } },
+    look: { smooth: { atk: 0.62, move: 0.3 }, color: '#e8f4ff', skin: '#f8e8e4' },
+    throw: {
+      reach: [0.3, 1.4, 0.3, 0, 1.5, 0.2, 0, 0.8, -0.4, -0.5, 0.3, 8],
+      name: '投げ', box: { x: 0, y: -85, w: 60, h: 75 },
+      startup: 6, active: 3, whiff: 24, release: 32, total: 60,
+      f: { name: '氷突き放し', damage: 10, vx: 10, vy: -5, hitstun: 26, effect: { preset: 'frost', hit: [{ type: 'icicle', at: 'hit', r: 30, count: 4, duration: 16 }, { type: 'snow', r: 34, count: 8 }] } },
+      b: { name: '凍て返し', damage: 9, vx: 9, vy: -6, hitstun: 26, effect: { preset: 'frost' } },
+      u: { name: '氷柱上げ', damage: 7, vx: 1, vy: -15, hitstun: 30, effect: { preset: 'glacier', hit: [{ type: 'icicle', at: 'feet', r: 30, count: 3, length: 90, duration: 18 }] } },
+      d: { name: '氷床落とし', damage: 11, vx: 3, vy: -6, hitstun: 30, spike: 3, effect: { preset: 'glacier', hit: [{ type: 'icicle', at: 'feet', r: 60, count: 6, duration: 20 }, { type: 'shake', duration: 8, power: 5 }] } },
+    },
+    hitPoses: { head: [-0.25, 0.9, 1.8, 0, 0.7, 1.9, 0, 0.4, -0.5, -0.3, 0.4, 0] },
+    poses: {
+      idle: [0.02, 0.85, 0.75, -0.1, 0.5, 1.4, 0, 0.3, -0.2, -0.3, 0.2, 0, , , , , 1.4],  // 待機(槍を斜め前に構え、背筋をのばす)
+      walk: [0.06, 0.25, 0.6, 0.6],                                                        // 歩き(すべるように静かに)
+      guard: [0.0, 1.2, 1.6, 0.6, 1.0, 2.0, 0, 0.3, -0.35, -0.3, 0.3, 0],                // 槍を横にして受ける
+      crouch: [0.25, 1.1, 0.6, 0, 0.6, 1.8, 0, 1.1, -1.6, -0.9, 1.3, 0],
+      jumpSquat: [0.35, 0.6, 0.9, 0, 0.2, 1.0, 0, 1.1, -1.7, -1, 1.7, -2],
+      landing: [0.35, 1.3, 0.5, 0, 0.9, 0.6, 0, 1.2, -1.6, -0.5, 0.9, 4],
+      dashF: [0.55, 1.4, 0.2, 0, 0.6, 1.2, 0, 1.0, -0.5, -0.7, 0.3, 0],                  // 氷の上をすべる(槍を前へ)
+      dashB: [-0.25, 0.8, 1.2, 0, 0.5, 1.6, 0, 0.6, -0.8, 0.1, -0.4, 0],
+      jumpUp: [-0.1, 1.9, 0.5, 0, 1.2, 1.0, 0, 0.9, -1.4, 0.2, -0.6, 0],
+      fall: [0.05, 1.4, 0.6, 0, 1.0, 0.9, 0, 0.3, -0.4, 0.1, -0.3, 0],
+    },
+    // 右腕(手前)= 氷の槍を持つ手 / 左腕(奥)= 冷気を放つ手
+    motions: {
+      n: { w: [-0.1, 0.6, 1.4, 0, 0.5, 1.5, 0, 0.4, -0.4, -0.3, 0.3, -6], s: [0.2, 1.55, 0.05, 0, 0.4, 1.4, 0, 0.5, -0.4, -0.4, 0.35, 14] },                  // 氷槍突き
+      f: { w: [-0.3, 0.3, 1.9, 0, 0.4, 1.8, 0, 0.6, -0.6, -0.5, 0.5, -12], s: [0.5, 1.6, 0.0, 0, -0.2, 1.0, 0, 1.1, -0.3, -0.9, 0.3, 28] },                  // 穿氷: 大きく踏み込んで突く
+      b: { w: [0.1, 1.4, 0.4, 0, 0.6, 1.5, 0, 0.5, -0.4, -0.3, 0.4, 2], s: [0.35, 0.6, 0.3, 0, 0.3, 1.6, 0, 0.3, -0.4, -0.7, 0.8, -14] },                     // 霜返し: 下がりながら足元を払う
+      u: { w: [0.2, 0.7, 1.0, 0, 0.4, 1.5, 0, 0.6, -0.9, -0.3, 0.8, 0], s: [-0.25, 2.9, 0.1, 0, 0.9, 1.2, 0, 0.3, -0.2, -0.3, 0.2, 4] },                      // 氷柱突き上げ: 槍を真上へ
+      d: { w: [0.35, 1.0, 0.6, 0, 0.5, 1.6, 0, 1.1, -1.6, 0.2, -1.0, -2], s: [0.55, 1.1, 0.0, 0, 0.4, 1.5, 0, 1.4, -1.4, -0.8, -1.0, 16] },                   // 凍て払い: しゃがんで足元を薙ぐ
+      da: { w: [0.5, 1.3, 0.3, 0, 0.7, 1.3, 0, 1.1, -0.8, -0.7, 0.5, -10], s: [0.75, 1.55, 0.0, 0, 0.0, 1.0, 0, 1.0, -0.3, -1.0, 0.3, 24] },                  // 氷滑り: すべりながら突く
+      an: { w: [-0.4, 0.2, 1.2, 0, 0.4, 1.3, 0, 0.9, -1.4, 0.3, -1.0, -4], s: [0.5, 2.3, 0.1, 0, -0.4, 1.0, 0, 0.7, -1.0, -0.2, -0.7, 8] },                  // 氷輪: 槍を回す
+      af: { w: [0.2, 1.0, 0.8, 0, 0.5, 1.4, 0, 1.0, -1.4, 0.3, -0.9, -4], s: [0.0, 1.55, 0.0, 0, 0.3, 1.5, 0, 0.8, -0.8, -0.1, -0.6, 14] },                   // 氷槍・空
+      au: { w: [0.3, 0.8, 1.0, 0, 0.4, 1.5, 0, 1.0, -1.5, 0.4, -1.1, 0], s: [-0.4, 3.0, 0.05, 0, 1.6, 0.8, 0, 1.3, -0.5, 0.3, -0.8, 2] },                     // 霜柱
+      ad: { w: [0.0, 2.7, 0.5, 0, 2.2, 0.8, 0, 0.9, -1.5, 0.5, -1.2, 0], s: [0.3, 0.1, 0.05, 0, 0.5, 0.6, 0, 0.3, -0.2, -0.2, -0.3, 0] },                     // 氷墜: 槍を真下へ突き立てて落ちる
+      s: { w: [-0.2, 0.2, 2.0, 0, 0.8, 1.4, 0, 0.5, -0.5, -0.4, 0.4, -8], s: [0.25, 0.8, 1.4, 0, 1.6, 0.05, 0, 0.6, -0.4, -0.5, 0.35, 10] },                 // フロストランス: 奥の手から氷の槍を放つ
+      sf: { w: [0.2, 0.9, 1.0, 0, 0.6, 1.4, 0, 0.9, -0.9, -0.5, 0.5, -6], s: [0.45, 1.6, 0.0, 0, 0.3, 1.4, 0, 1.0, -0.4, -0.8, 0.4, 20] },                    // 氷華連突
+      sb: { w: [-0.1, 2.4, 0.6, 0, 1.4, 1.2, 0, 0.6, -0.6, -0.4, 0.5, -4], s: [0.4, 1.0, 0.2, 0, 0.6, 1.4, 0, 0.9, -0.5, -0.7, 0.4, 14] },                    // 氷鎧: 氷をまとい、振り下ろす
+      su: { w: [0.35, 0.8, 1.0, 0, 0.4, 1.6, 0, 1.0, -1.5, 0.3, -1.1, 0], s: [-0.25, 3.05, 0.05, 0, 1.2, 0.8, 0, 0.9, -1.2, -0.1, -0.3, 6] },                // 氷柱昇り
+      sd: { w: [0.0, 2.6, 0.5, 0, 1.6, 1.0, 0, 0.5, -0.5, -0.4, 0.4, -2], s: [0.45, 0.3, 0.1, 0, 0.6, 0.6, 0, 0.8, -0.9, -0.6, 0.5, 8] },                     // 氷柱の森: 槍を地面へ突き立てる
+      c1: { w: [0.3, 1.0, 0.6, 0, 0.5, 1.6, 0, 1.0, -1.5, 0.2, -1.0, -2], s: [0.6, 0.6, 0.2, 0, 1.2, 0.4, 0, 1.3, -1.3, -0.8, -0.9, 12] },                    // 氷河走り: 低く構えて地面を凍らせる
+      c2: { w: [-0.4, 3.0, 0.3, 0, 2.6, 0.5, 0, 0.6, -0.7, -0.5, 0.5, -6], s: [0.7, 0.8, 0.1, 0, 0.6, 0.3, 0, 1.0, -0.8, -0.8, 0.4, 18] },                    // 砕氷: 頭上から叩き割る
+      gx: { w: [0.1, 1.8, 0.5, 0, 1.8, 0.5, 0, 0.5, -0.5, -0.4, 0.4, 0], s: [-0.1, 2.6, 0.2, 0, 2.4, 0.3, 0, 0.5, -0.4, -0.4, 0.3, 0] },                      // ブリザード: 両手を広げて吹雪を起こす
+      sx: { w: [-0.3, 0.2, 2.1, 0, 0.6, 1.6, 0, 0.6, -0.6, -0.5, 0.5, -12], s: [0.55, 1.6, 0.0, 0, 1.3, 0.2, 0, 1.1, -0.3, -0.9, 0.3, 26] },                // ダイヤモンドダスト
+    },
+    combos: ['Z→→Z→A フロストランス (冷えをためる)', '↓Z→↓↘→+Z 氷河走り (遠くから大きく冷やす)', '凍らせて→↓↙←+A 砕氷 (SHATTER! で大ダメージ)', 'ゲージ技ブリザード→Z→砕氷 (凍らせてすぐ砕く)'],
+    moves: {
+      n: { name: '氷槍突き', startup: 6, active: 3, recovery: 9, damage: 4, knockX: 3, knockY: -1, hitstun: 15, chill: 4, effect: { preset: 'frost', size: 0.6 }, box: { x: 30, y: -84, w: 72, h: 20 } },
+      f: { name: '穿氷', startup: 11, active: 4, recovery: 19, damage: 8, knockX: 6, knockY: -2, hitstun: 22, chill: 8, launch: { x: 4 }, effect: { preset: 'frost', attack: [{ type: 'beam', at: 'base', width: 6, duration: 8, color: '#cff4ff' }, { type: 'snow', r: 30, count: 6 }] }, box: { x: 40, y: -86, w: 110, h: 22 } }, // 全キャラでいちばん長い通常技
+      b: { name: '霜返し', startup: 7, active: 4, recovery: 14, damage: 5, knockX: 5, knockY: -1, hitstun: 20, chill: 8, launch: { x: -7 }, effect: { preset: 'frost', attack: [{ type: 'crescent', angle: 1, width: 8, span: 2 }, { type: 'snow', at: 'feet', x: 50, r: 30, count: 6 }] }, box: { x: 20, y: -42, w: 92, h: 32 } },
+      u: { name: '氷柱突き上げ', startup: 7, active: 5, recovery: 18, damage: 7, knockX: 2, knockY: -10, hitstun: 24, chill: 8, effect: { preset: 'frost', attack: [{ type: 'beam', at: 'hitbox', angle: -1, width: 5 }, { type: 'star', count: 6, r: 16, spin: 2 }] }, box: { x: 10, y: -172, w: 50, h: 112 } },
+      d: { name: '凍て払い', startup: 7, active: 4, recovery: 13, damage: 5, knockX: 3, knockY: -1, hitstun: 20, chill: 10, effect: { preset: 'frost', attack: [{ type: 'crescent', angle: 1, width: 8, span: 2.2 }, { type: 'icicle', at: 'feet', x: 70, r: 26, count: 3, length: 30 }] }, box: { x: 30, y: -24, w: 100, h: 24 } },
+      da: { name: '氷滑り', startup: 7, active: 12, recovery: 16, damage: 7, knockX: 6, knockY: -3, hitstun: 22, chill: 10, launch: { x: 15 }, effect: { preset: 'frost', attack: [{ type: 'lines', count: 5, at: 'body', length: 110, color: '#cff4ff' }, { type: 'snow', at: 'feet', r: 30, count: 8 }] }, box: { x: 30, y: -78, w: 82, h: 30 } },
+      an: { name: '氷輪', landLag: 5, startup: 5, active: 6, recovery: 9, damage: 5, knockX: 2, knockY: -3, hitstun: 16, chill: 6, effect: { preset: 'frost', attack: [{ type: 'crescent', width: 9, span: 4 }] }, box: { x: -30, y: -100, w: 110, h: 60 } },
+      af: { name: '氷槍・空', landLag: 9, startup: 7, active: 5, recovery: 11, damage: 7, knockX: 5, knockY: -2, hitstun: 20, chill: 8, effect: { preset: 'frost', attack: [{ type: 'beam', at: 'base', width: 5, duration: 8, color: '#cff4ff' }] }, box: { x: 30, y: -78, w: 102, h: 30 } },
+      au: { name: '霜柱', landLag: 8, startup: 6, active: 5, recovery: 11, damage: 6, knockX: 2, knockY: -9, hitstun: 20, chill: 6, effect: { preset: 'frost', attack: [{ type: 'crescent', angle: -1, width: 8, span: 3 }] }, box: { x: -10, y: -162, w: 62, h: 92 } },
+      ad: { name: '氷墜', landLag: 12, startup: 8, active: 8, recovery: 14, damage: 8, knockX: 2, knockY: 8, spike: 4, hitstun: 22, chill: 10, launch: { x: 0, y: 12 }, effect: { preset: 'frost', hit: [{ type: 'icicle', at: 'feet', r: 40, count: 5, length: 50 }, { type: 'shake', duration: 6, power: 4 }] }, box: { x: -5, y: -22, w: 42, h: 92 } },
+      s: { name: 'フロストランス', startup: 12, active: 3, recovery: 18, damage: 0, knockX: 0, knockY: 0, hitstun: 0, effect: { preset: 'frost', start: [{ type: 'snow', at: 'front', r: 22, count: 6, duration: 14, follow: true }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      sf: { name: '氷華連突', startup: 9, active: 15, recovery: 20, damage: 3, hits: 5, hitInterval: 3, hitStop: 4, knockX: 1.5, knockY: -1, hitstun: 22, chill: 5, launch: { x: 5 },
+        effect: { preset: 'frost', attack: [{ type: 'beam', at: 'base', width: 6, duration: 14, color: '#cff4ff' }, { type: 'star', count: 6, r: 22, spin: 3, delay: 4 }, { type: 'snow', r: 40, count: 10, duration: 20 }] }, box: { x: 30, y: -92, w: 112, h: 40 } },
+      // 氷鎧: 出始めから2回まで攻撃を受けても止まらない(アーマー)。そのまま振り下ろす
+      sb: { name: '氷鎧', startup: 10, active: 5, recovery: 18, armor: 2, damage: 9, knockX: 9, knockY: -3, hitstun: 24, chill: 12,
+        effect: { preset: 'frost', start: [{ type: 'icicle', at: 'feet', r: 34, count: 5, length: 50, duration: 16 }, { type: 'flash', at: 'body', r: 50, blend: 'add', color: '#bfefff' }], attack: [{ type: 'crescent', angle: 1, width: 12, span: 2.6 }] }, box: { x: 10, y: -98, w: 102, h: 72 } },
+      su: { name: '氷柱昇り', startup: 5, active: 9, recovery: 26, invincible: 6, damage: 11, knockX: 3, knockY: -11, hitstun: 28, chill: 15, launch: { x: 2, y: -11 },
+        effect: { preset: 'glacier', attack: [{ type: 'icicle', at: 'feet', r: 40, count: 5, length: 110, duration: 24 }, { type: 'crescent', angle: -1, width: 10, span: 3 }] }, box: { x: -10, y: -162, w: 70, h: 162 } },
+      sd: { name: '氷柱の森', startup: 16, active: 9, recovery: 24, damage: 4, hits: 3, hitInterval: 3, hitStop: 4, knockX: 1, knockY: -7, hitstun: 26, chill: 9, effect: { preset: 'glacier', attack: [{ type: 'icicle', at: 'ground', r: 56, count: 6, length: 100, duration: 26 }, { type: 'snow', at: 'ground', y: -40, r: 50, count: 10, duration: 26 }] }, box: { x: 110, y: -82, w: 112, h: 82 } },
+      c1: { name: '氷河走り', command: '↓↘→+Z', startup: 13, active: 3, recovery: 20, damage: 0, knockX: 0, knockY: 0, hitstun: 0, rank: 4, box: { x: 0, y: 0, w: 0, h: 0 },
+        projectile: { speed: 7, damage: 5, radius: 16, life: 90, chill: 30, knockX: 2, knockY: -1, hitstun: 22, look: 'frostWave', path: 'ground', from: { x: 40, y: -16 } },
+        effect: { preset: 'frost', attack: [{ type: 'icicle', at: 'feet', x: 40, r: 24, count: 3, length: 30 }] } },
+      // 砕氷: 頭上から槍を叩きつける。凍った相手に当てると SHATTER!(ダメージ ×1.6 +6)
+      c2: { name: '砕氷', command: '↓↙←+A', startup: 14, active: 5, recovery: 22, damage: 12, knockX: 10, knockY: -6, hitstun: 30, shatter: true, chill: 5, rank: 4,
+        effect: { preset: 'glacier', attack: [{ type: 'crescent', angle: 1, width: 14, span: 2.4 }, { type: 'icicle', at: 'ground', r: 40, count: 4, length: 60 }, { type: 'shake', duration: 6, power: 4 }] }, box: { x: 20, y: -122, w: 102, h: 122 } },
+      gx: { name: 'ブリザード', cost: 25, startup: 8, active: 30, recovery: 22, damage: 2, hits: 6, hitInterval: 5, hitStop: 3, knockX: 0.5, knockY: -1, hitstun: 18, chill: 9,
+        effect: { preset: 'frost', strength: 1.5, attack: [{ type: 'snow', at: 'body', r: 120, count: 18, duration: 34 }, { type: 'gust', at: 'body', r: 110, count: 6, duration: 32, color: '#e8fbff' }, { type: 'ring', at: 'feet', flat: true, r: 110, duration: 20 }] }, box: { x: -70, y: -132, w: 222, h: 132 } },
+      sx: { name: 'ダイヤモンドダスト', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 10, active: 28, recovery: 30, damage: 4, hits: 6, hitInterval: 4, hitStop: 4, knockX: 1, knockY: -2, hitstun: 30, chill: 20, shatter: true,
+        effect: { preset: 'frost', strength: 2, start: [{ type: 'snow', at: 'body', r: 70, count: 14, duration: 20, follow: true }],
+          attack: [{ type: 'beam', at: 'base', length: 360, width: 40, duration: 30, color: '#bfefff' }, { type: 'beam', at: 'base', length: 360, width: 14, duration: 30, color: '#ffffff' }, { type: 'icicle', at: 'ground', r: 140, count: 9, length: 120, duration: 32 }, { type: 'snow', at: 'hitbox', r: 160, count: 24, duration: 36 }, { type: 'text', text: 'Diamond Dust', at: 'head', delay: 12 }] },
+        box: { x: 20, y: -132, w: 362, h: 132 } },
+    },
+  },
+  {
+    name: 'シゲル',
+    desc: '森の子:種の罠とつる・立ち止まると回復',
+    // 性能  打たれ強い(体力115)が足は遅い。地上で立ち止まっていると光合成で体力が少しずつ戻る(photosynthesis)。
+    //   A で種をまくと地面に芽が残り(3つまで)、相手が踏むと浮かせる。↓↓+A「開花」で芽を一斉にはじけさせる。つるの技は細くて長い
+    stats: { hp: 115, jumpStartup: 5, landLag: 4, airLandLag: 9, speed: 3.8, jump: -12.5, airJumps: 1, dashSpeed: 8, shield: 65, photosynthesis: { delay: 50, rate: 0.025 } },
+    ko: { type: 'collapse', drift: 1.5, keys: [[10, 'stagger'], [14, 'kneel'], [18, 'fallFront']], lie: 'front', thud: 16, dust: '#9adf6a' }, // 葉を散らしながら前へ倒れる
+    sp: { max: 100, time: 0.012, hit: 0.6, combo: 1, hurt: 0.4, color: '#7ad04a' },
+    projectile: { speed: 6, damage: 7, radius: 10, life: 120, knockX: 2, knockY: -9, hitstun: 26, look: 'seed', path: { type: 'seed', up: 7, gravity: 0.3, trap: 420 }, from: { x: 30, y: -84 } },
+    look: { smooth: { atk: 0.6, move: 0.3 }, color: '#5aa83a', skin: '#f0cfa8' },
+    throw: {
+      reach: [0.35, 1.5, 0.3, 0, 1.5, 0.3, 0, 0.8, -0.4, -0.5, 0.3, 8],
+      name: '投げ', box: { x: 0, y: -85, w: 62, h: 75 },
+      startup: 6, active: 3, whiff: 22, release: 32, total: 58,
+      f: { name: 'つる投げ', damage: 10, vx: 10, vy: -6, hitstun: 26, effect: { preset: 'verdant' } },
+      b: { name: '根返し', damage: 9, vx: 9, vy: -6, hitstun: 26, effect: { preset: 'thorn', hit: [{ type: 'thorns', at: 'feet', r: 40, count: 4, length: 50 }] } },
+      u: { name: '若木上げ', damage: 7, vx: 1, vy: -15, hitstun: 30, effect: { preset: 'verdant', hit: [{ type: 'vine', at: 'feet', angle: -2, length: 120, width: 7 }, { type: 'leaves', r: 40, count: 10 }] } },
+      d: { name: '土返し', damage: 12, vx: 3, vy: -6, hitstun: 30, spike: 3, effect: { preset: 'thorn', hit: [{ type: 'thorns', at: 'feet', r: 60, count: 6, length: 60 }, { type: 'debris', count: 6, dir: 'up', speed: 5, color: '#7a5a3a' }, { type: 'shake', duration: 8, power: 5 }] } },
+    },
+    hitPoses: { head: [-0.3, 0.8, 1.9, 0, 0.6, 2, 0, 0.5, -0.6, -0.3, 0.5, 0] },
+    poses: {
+      idle: [0.12, 0.5, 1.6, 0, 0.5, 1.4, 0, 0.35, -0.4, -0.4, 0.4, 0, , , , , 1.5],    // 待機(両手をゆるく前に、少し猫背)
+      walk: [0.18, 0.55, 0.65, 0.9],                                                      // 歩き(のしのし)
+      guard: [0.1, 1.2, 2.2, 0, 1.1, 2.2, 0, 0.4, -0.5, -0.4, 0.4, 0],
+      crouch: [0.4, 0.9, 1.6, 0, 0.8, 1.6, 0, 1.2, -1.7, -1.0, 1.4, 0],
+      jumpSquat: [0.5, 0.1, 0.9, 0, 0.0, 0.9, 0, 1.2, -1.8, -1, 1.8, -2],
+      landing: [0.5, 1.3, 0.5, 0, 1.2, 0.6, 0, 1.3, -1.7, -0.6, 1.0, 4],
+      dashF: [0.6, 1.0, 1.2, 0, 0.8, 1.2, 0, 1.1, -1.1, -0.8, 0.5, 0],
+      dashB: [-0.25, 0.7, 1.6, 0, 0.6, 1.7, 0, 0.7, -0.9, 0.1, -0.4, 0],
+      jumpUp: [-0.1, 1.4, 1.2, 0, 1.6, 1.0, 0, 1.0, -1.5, 0.2, -0.7, 0],
+      fall: [0.1, 1.6, 0.6, 0, 1.4, 0.7, 0, 0.4, -0.6, 0.1, -0.4, 0],
+    },
+    motions: {
+      n: { w: [-0.05, 0.3, 1.9, 0, 0.4, 1.4, 0, 0.4, -0.4, -0.3, 0.3, -4], s: [0.2, 1.6, 0.1, 0, 0.4, 1.4, 0, 0.5, -0.4, -0.4, 0.35, 10] },                  // つる打ち: 手からつるを伸ばす
+      f: { w: [-0.3, -0.5, 1.6, 0, 0.5, 1.4, 0, 0.5, -0.5, -0.4, 0.4, -8], s: [0.35, 1.55, 0.0, 0, 0.2, 1.2, 0, 0.8, -0.3, -0.6, 0.3, 14] },                // 長つる鞭: 振りかぶって遠くへ
+      b: { w: [0.3, 1.6, 0.1, 0, 0.6, 1.4, 0, 0.6, -0.4, -0.4, 0.4, 8], s: [-0.35, 0.2, 2.0, 0, 0.5, 1.6, 0, 0.3, -0.4, -0.3, 0.6, -8] },                    // つる引き: 伸ばしたつるを引き戻す
+      u: { w: [0.3, 0.4, 1.6, 0, 0.4, 1.6, 0, 0.9, -1.4, -0.2, 1.0, 0], s: [-0.25, 2.9, 0.2, 0, 2.6, 0.3, 0, 0.3, -0.2, -0.3, 0.2, 4] },                     // 若葉昇り: 両手を突き上げる
+      d: { w: [0.4, 0.6, 1.6, 0, 0.6, 1.6, 0, 1.1, -1.6, 0.2, -1.1, -2], s: [0.6, 0.6, 0.4, 0, 0.5, 0.5, 0, 1.3, -1.4, -0.8, -1.0, 8] },                     // 根っこ払い: 両手を地面に
+      da: { w: [0.6, 1.0, 1.6, 0, 0.9, 1.6, 0, 1.4, -2.0, 0.6, -1.6, -6], s: [1.2, 1.4, 1.6, 0, 1.3, 1.6, 0, 1.6, -2.2, 1.1, -2.0, 16] },                     // 転がり種: 体を丸めて転がる
+      an: { w: [-0.4, -0.4, 1.4, 0, 0.4, 1.2, 0, 0.9, -1.4, 0.3, -1.0, -6], s: [0.4, 2.0, 0.3, 0, -0.5, 1.0, 0, 0.7, -1.0, -0.2, -0.7, 8] },                // 葉回し
+      af: { w: [0.3, 2.5, 0.4, 0, 1.0, 1.2, 0, 1.0, -1.5, 0.3, -0.9, -4], s: [0.3, 1.0, 0.1, 0, 0.6, 1.2, 0, 0.7, -0.8, -0.2, -0.6, 12] },                  // 葉刃: 振り下ろす
+      au: { w: [0.3, 0.6, 1.4, 0, 0.5, 1.4, 0, 1.0, -1.5, 0.4, -1.1, 0], s: [-0.5, 3.0, 0.1, 0, 2.6, 0.3, 0, 1.3, -0.5, 0.3, -0.8, 2] },                      // つる上げ
+      ad: { w: [0.3, 1.5, 1.6, 0, 1.4, 1.6, 0, 1.2, -1.8, 0.8, -1.6, 0], s: [0.5, 0.6, 1.0, 0, 0.6, 1.0, 0, 0.6, -0.4, 0.1, -0.4, 4] },                      // 種爆弾: 丸まって落ちる
+      s: { w: [-0.3, -0.9, 1.6, 0, 0.6, 1.4, 0, 0.5, -0.5, -0.4, 0.4, -6], s: [0.2, 2.3, 0.3, 0, 0.4, 1.4, 0, 0.7, -0.4, -0.5, 0.35, 8] },                 // 種まき: 下から上へ放り投げる
+      sf: { w: [0.4, 0.4, 1.8, 0, 0.6, 1.8, 0, 1.0, -1.0, -0.6, 0.6, -10], s: [0.85, 1.5, 0.3, 0, 1.4, 0.3, 0, 1.0, -0.2, -1.0, 0.4, 24] },                 // いばらの突進
+      sb: { w: [0.1, 0.9, 1.3, 0, 0.9, 1.3, 0, 0.6, -0.8, -0.6, 0.8, 0], s: [0.25, 0.4, 0.6, 0, 0.4, 0.6, 0, 0.7, -1.2, -0.7, 1.2, 0] },                     // 根張り: 腰を落として根を下ろす
+      su: { w: [0.4, 0.5, 1.6, 0, 0.5, 1.6, 0, 1.1, -1.6, 0.2, -1.1, 0], s: [-0.2, 3.0, 0.1, 0, 2.8, 0.2, 0, 0.6, -1.0, -0.2, -0.4, 4] },                    // 大樹昇り
+      sd: { w: [0.2, 2.6, 0.5, 0, 2.4, 0.6, 0, 0.6, -0.6, -0.4, 0.5, 0], s: [0.6, 0.5, 0.3, 0, 0.5, 0.3, 0, 0.9, -1.2, -0.6, 0.7, 6] },                     // 茨の檻: 両手を地面へ叩きつける
+      c1: { w: [-0.3, -0.5, 1.6, 0, 0.6, 1.4, 0, 0.5, -0.5, -0.4, 0.4, -8], s: [0.4, 1.55, 0.0, 0, 1.5, 0.1, 0, 0.8, -0.3, -0.6, 0.3, 12] },               // つる捕縛: 両手から伸ばす
+      c2: { w: [0.2, 0.6, 1.8, 0, 0.6, 1.8, 0, 0.5, -0.6, -0.4, 0.5, 0], s: [-0.15, 2.6, 0.5, 0, 2.6, 0.5, 0, 0.4, -0.4, -0.4, 0.4, 0] },                  // 開花: 両手を空へ開く
+      gx: { w: [0.2, 1.4, 1.0, 0, 1.4, 1.0, 0, 0.6, -0.8, -0.5, 0.7, 0], s: [-0.1, 2.4, 0.4, 0, 2.4, 0.4, 0, 0.4, -0.4, -0.4, 0.4, 0] },                    // 森の恵み
+      sx: { w: [0.5, 0.6, 1.6, 0, 0.6, 1.6, 0, 1.1, -1.6, 0.2, -1.1, 0], s: [-0.2, 3.0, 0.2, 0, 2.9, 0.2, 0, 0.4, -0.4, -0.4, 0.4, 0] },                     // 世界樹
+    },
+    combos: ['A 種まき→相手が芽を踏んで浮く→→Z 長つる鞭', '↓Z 根っこ払い→↓↘→+A つる捕縛', '芽を3つまいて→↓↓+A 開花 (まとめてはじける)', '離れて立ち止まる→光合成で回復'],
+    moves: {
+      n: { name: 'つる打ち', startup: 5, active: 3, recovery: 8, damage: 4, knockX: 3, knockY: -2, hitstun: 16, effect: { preset: 'verdant', attack: [{ type: 'vine', at: 'base', width: 4, length: 60, duration: 10 }] }, box: { x: 24, y: -82, w: 62, h: 22 } },
+      f: { name: '長つる鞭', startup: 12, active: 4, recovery: 19, damage: 7, knockX: 5, knockY: -2, hitstun: 20, effect: { preset: 'verdant', attack: [{ type: 'vine', at: 'base', width: 5, length: 150, duration: 14 }, { type: 'leaves', at: 'hitbox', x: 60, r: 20, count: 4 }] }, box: { x: 30, y: -80, w: 152, h: 16 } }, // 細いが全キャラでいちばん遠くまで届く
+      b: { name: 'つる引き', startup: 9, active: 4, recovery: 16, damage: 5, knockX: -8, knockY: -2, hitstun: 22, effect: { preset: 'verdant', attack: [{ type: 'vine', at: 'base', width: 5, length: 130, duration: 14 }] }, box: { x: 30, y: -72, w: 132, h: 24 } }, // 引き寄せる
+      u: { name: '若葉昇り', startup: 6, active: 5, recovery: 17, damage: 7, knockX: 2, knockY: -11, hitstun: 24, effect: { preset: 'verdant', attack: [{ type: 'vine', at: 'body', angle: -2.4, width: 6, length: 110, duration: 14 }, { type: 'leaves', at: 'head', r: 30, count: 6 }] }, box: { x: -10, y: -152, w: 62, h: 95 } },
+      d: { name: '根っこ払い', startup: 7, active: 4, recovery: 12, damage: 5, knockX: 2, knockY: -6, hitstun: 22, effect: { preset: 'thorn', attack: [{ type: 'thorns', at: 'ground', r: 30, count: 3, length: 34, duration: 16 }] }, box: { x: 30, y: -30, w: 72, h: 30 } }, // 下段。当てると少し浮く
+      da: { name: '転がり種', startup: 7, active: 12, recovery: 16, damage: 6, knockX: 5, knockY: -4, hitstun: 22, launch: { x: 11 }, effect: { preset: 'verdant', attack: [{ type: 'leaves', at: 'body', r: 40, count: 8, duration: 20 }, { type: 'lines', count: 3, at: 'body', length: 80 }] }, box: { x: 0, y: -72, w: 72, h: 62 } },
+      an: { name: '葉回し', landLag: 5, startup: 5, active: 8, recovery: 9, damage: 4, knockX: 2, knockY: -3, hitstun: 16, effect: { preset: 'verdant', attack: [{ type: 'leaves', at: 'body', r: 44, count: 8 }] }, box: { x: -20, y: -92, w: 82, h: 62 } },
+      af: { name: '葉刃', landLag: 9, startup: 6, active: 5, recovery: 12, damage: 7, knockX: 5, knockY: -3, hitstun: 20, effect: { preset: 'verdant', attack: [{ type: 'crescent', angle: 1, width: 10, span: 2.4, color: '#7ad04a' }, { type: 'leaves', r: 30, count: 5 }] }, box: { x: 20, y: -96, w: 82, h: 56 } },
+      au: { name: 'つる上げ', landLag: 7, startup: 6, active: 5, recovery: 10, damage: 5, knockX: 2, knockY: -9, hitstun: 20, effect: { preset: 'verdant', attack: [{ type: 'vine', at: 'body', angle: -2.4, width: 5, length: 100 }] }, box: { x: -20, y: -172, w: 62, h: 102 } },
+      ad: { name: '種爆弾', landLag: 11, startup: 8, active: 6, recovery: 14, damage: 7, knockX: 3, knockY: 6, hitstun: 22, launch: { x: 0, y: 10 }, effect: { preset: 'verdant', hit: [{ type: 'leaves', r: 40, count: 10 }, { type: 'ring', flat: true, r: 40 }] }, box: { x: -20, y: -15, w: 52, h: 72 } },
+      s: { name: '種まき', startup: 11, active: 3, recovery: 16, damage: 0, knockX: 0, knockY: 0, hitstun: 0, effect: { preset: 'verdant', attack: [{ type: 'leaves', at: 'front', r: 20, count: 4 }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      sf: { name: 'いばらの突進', startup: 10, active: 14, recovery: 20, damage: 4, hits: 3, hitInterval: 4, hitStop: 4, knockX: 3, knockY: -3, hitstun: 22, launch: { x: 12 }, effect: { preset: 'thorn', attack: [{ type: 'thorns', at: 'body', y: 60, r: 30, count: 4, length: 40, duration: 16, follow: true }, { type: 'leaves', at: 'body', r: 40, count: 8 }, { type: 'lines', count: 4, at: 'body', length: 90 }] }, box: { x: 0, y: -92, w: 82, h: 82 } },
+      // 根張り: その場に根を下ろして3回まで攻撃を受け止め(アーマー)、体力が6戻る。まわりにとげが生える
+      sb: { name: '根張り', startup: 8, active: 30, recovery: 16, armor: 3, heal: 6, damage: 5, knockX: 6, knockY: -2, hitstun: 20, launch: { x: 0 },
+        effect: { preset: 'thorn', start: [{ type: 'leaves', at: 'body', r: 40, count: 8 }], attack: [{ type: 'thorns', at: 'feet', r: 60, count: 6, length: 50, duration: 30 }, { type: 'flash', at: 'body', r: 50, blend: 'add', color: '#bfff8a' }] }, box: { x: -30, y: -102, w: 112, h: 102 } },
+      su: { name: '大樹昇り', startup: 6, active: 10, recovery: 26, invincible: 6, damage: 12, knockX: 3, knockY: -11, hitstun: 28, launch: { x: 1, y: -12 },
+        effect: { preset: 'verdant', attack: [{ type: 'thorns', at: 'feet', r: 34, count: 4, length: 110, duration: 22 }, { type: 'vine', at: 'feet', angle: -2.5, width: 9, length: 160, duration: 20 }, { type: 'leaves', at: 'body', r: 50, count: 12 }] }, box: { x: -15, y: -172, w: 82, h: 172 } },
+      sd: { name: '茨の檻', startup: 15, active: 10, recovery: 24, damage: 4, hits: 3, hitInterval: 4, hitStop: 4, knockX: 1, knockY: -5, hitstun: 24, low: true, effect: 'thorn', box: { x: 70, y: -62, w: 122, h: 62 } },
+      // つる捕縛: 遠くまで伸びるつるで相手をつかみ、引き寄せて地面へたたきつける(コマンド投げ)
+      c1: { name: 'つる捕縛', command: '↓↘→+A', startup: 12, active: 5, recovery: 28, damage: 13, knockX: 6, knockY: -8, hitstun: 28, rank: 4,
+        grab: { dir: 'd', box: { x: 20, y: -112, w: 162, h: 102 }, release: 30, total: 54, hold: { x: 40, y: 60 }, color: '#7ad04a' },
+        effect: { preset: 'verdant', start: [{ type: 'vine', at: 'front', width: 6, length: 160, duration: 16 }], attack: [{ type: 'leaves', r: 30, count: 8 }], hit: [{ type: 'thorns', at: 'feet', r: 50, count: 5, length: 50 }, { type: 'shake', duration: 8, power: 5 }] } },
+      // 開花: 自分がまいた芽をすべてはじけさせる(芽のまわりに当たって浮かせる)
+      c2: { name: '開花', command: '↓↓+A', startup: 8, active: 3, recovery: 18, damage: 0, knockX: 0, knockY: 0, hitstun: 0, bloom: true, rank: 3,
+        effect: { preset: 'verdant', attack: [{ type: 'bloom', at: 'head', r: 30, count: 8, duration: 16, color: '#ff8ac8', color2: '#fff6a0', blend: 'add' }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      // 森の恵み: 体力が15戻り、まわりに葉の嵐を起こして突き放す
+      gx: { name: '森の恵み', cost: 25, startup: 8, active: 10, recovery: 20, heal: 15, damage: 5, knockX: 8, knockY: -4, hitstun: 24,
+        effect: { preset: 'verdant', strength: 1.6, attack: [{ type: 'leaves', at: 'body', r: 110, count: 20, duration: 30 }, { type: 'bloom', at: 'body', r: 60, count: 10, duration: 18, color: '#9dff7a', color2: '#fff6a0', blend: 'add' }, { type: 'ring', at: 'feet', flat: true, r: 100 }] }, box: { x: -60, y: -122, w: 182, h: 122 } },
+      // 世界樹: 相手の足元から大樹が突き上げ、6回当てて高く持ち上げる
+      sx: { name: '世界樹', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 12, active: 30, recovery: 30, damage: 5, hits: 6, hitInterval: 5, hitStop: 4, knockX: 1, knockY: -5, hitstun: 30,
+        effect: { preset: 'verdant', strength: 2, attack: [{ type: 'thorns', at: 'ground', r: 70, count: 7, length: 240, duration: 34 }, { type: 'vine', at: 'ground', x: -40, angle: -2.6, width: 14, length: 260, duration: 34 }, { type: 'vine', at: 'ground', x: 40, angle: -2.4, width: 10, length: 230, duration: 34 },
+          { type: 'leaves', at: 'hitbox', y: -60, r: 120, count: 24, duration: 40 }, { type: 'text', text: 'Yggdrasil', at: 'head', delay: 12 }], hit: [{ type: 'leaves', r: 24, count: 4 }] },
+        box: { x: 60, y: -262, w: 162, h: 262 } },
+    },
+  },
+  {
+    name: 'ギア',
+    desc: '鋼の機兵:重装甲・ミサイル・熱でオーバーヒート',
+    // 性能  いちばん重く(体力120・シールド80)吹っ飛びにくいが、空中ジャンプができない。必殺技を出すたびに「熱」がたまり(heat)、
+    //   満タンでオーバーヒート(150F の間、必殺技が出ない)。ゲージ技「クーラント・パージ」で熱を0にできる
+    stats: { hp: 120, jumpStartup: 6, landLag: 5, airLandLag: 10, speed: 3.4, jump: -12, airJumps: 0, gravityMul: 1.1, dashSpeed: 11, shield: 80, knockbackTaken: 0.85 },
+    heat: { max: 100, decay: 0.28, lock: 150, color: '#ff7a3a' },
+    ko: { type: 'collapse', drift: 1, keys: [[10, 'stagger'], [10, 'stagger2'], [16, 'kneel'], [20, 'fallFront']], lie: 'front', thud: 26, dust: '#c8d0d8' }, // 火花を散らしてひざから崩れ、うつぶせに倒れる
+    sp: { max: 100, time: 0.012, hit: 0.55, combo: 0.9, hurt: 0.4, color: '#ff8a3a' },
+    projectile: { speed: 12, damage: 7, radius: 14, life: 80, knockX: 5, knockY: -3, hitstun: 22, look: 'rocketFist', path: { type: 'boomerang', back: 0.3 }, from: { x: 50, y: -88 } },
+    look: { smooth: { atk: 0.7, move: 0.28 }, color: '#b8c2cc', skin: '#9aa6b2' },
+    crouchParry: { dmg: 0.35, knock: 0.15 },
+    throw: {
+      reach: [0.3, 1.5, 0.2, 0, 1.4, 0.2, 0, 0.8, -0.4, -0.5, 0.3, 8],
+      name: '投げ', box: { x: 0, y: -90, w: 62, h: 80 },
+      startup: 7, active: 3, whiff: 26, release: 34, total: 62,
+      f: { name: 'アームスロー', damage: 11, vx: 11, vy: -6, hitstun: 26, effect: { preset: 'steel', hit: [{ type: 'impact', r: 34 }, { type: 'gear', r: 30, count: 4 }] } },
+      b: { name: 'リバースブースト投げ', damage: 10, vx: 10, vy: -7, hitstun: 26, leap: 30, effect: { preset: 'thruster' } },
+      u: { name: 'カタパルト', damage: 8, vx: 1, vy: -17, hitstun: 32, effect: { preset: 'thruster', hit: [{ type: 'flame', at: 'feet', r: 30, dir: 'down', duration: 12, color: '#ff8a3a', color2: '#ffe08a' }, { type: 'steam', at: 'feet', r: 40, count: 6 }] } },
+      d: { name: 'プレスダウン', damage: 13, vx: 2, vy: -6, hitstun: 30, spike: 4, effect: { preset: 'steel', hit: [{ type: 'impact', r: 44 }, { type: 'gear', r: 40, count: 6 }, { type: 'shake', duration: 10, power: 6 }] } },
+    },
+    hitPoses: { head: [-0.2, 0.9, 1.6, 0, 0.8, 1.7, 0, 0.4, -0.4, -0.3, 0.3, 0] },
+    poses: {
+      idle: [0.05, 0.5, 1.4, 0, 0.6, 1.3, 0, 0.35, -0.35, -0.35, 0.35, 0, , , , , 1.3],   // 待機(両こぶしを胸の前に、どっしり)
+      walk: [0.06, 0.25, 0.5, 0.5],                                                       // 歩き(重く、ゆれない)
+      guard: [0.0, 1.0, 2.4, 0, 1.0, 2.4, 0, 0.4, -0.4, -0.4, 0.4, 0],
+      crouch: [0.25, 0.8, 1.6, 0, 0.8, 1.6, 0, 1.1, -1.6, -1.0, 1.4, 0],
+      jumpSquat: [0.35, 0.3, 1.2, 0, 0.3, 1.2, 0, 1.2, -1.8, -1, 1.8, -2],
+      landing: [0.4, 1.0, 0.8, 0, 1.0, 0.8, 0, 1.3, -1.8, -0.6, 1.1, 4],
+      dashF: [0.45, -0.3, 1.0, 0, -0.2, 1.0, 0, 0.6, -0.6, -0.5, 0.5, 0],               // スラスターで滑る(腕を後ろへ)
+      dashB: [-0.2, 0.9, 1.6, 0, 0.8, 1.6, 0, 0.5, -0.6, 0.0, -0.3, 0],
+      jumpUp: [0.0, 1.0, 1.4, 0, 1.0, 1.4, 0, 0.7, -1.0, 0.1, -0.6, 0],
+      fall: [0.05, 1.2, 1.0, 0, 1.2, 1.0, 0, 0.3, -0.4, 0.0, -0.3, 0],
+    },
+    motions: {
+      n: { w: [-0.05, 0.4, 1.9, 0, 0.6, 1.3, 0, 0.35, -0.35, -0.35, 0.35, -4], s: [0.15, 1.55, 0.05, 0, 0.6, 1.3, 0, 0.4, -0.35, -0.4, 0.35, 10] },          // ピストンジャブ
+      f: { w: [-0.3, -0.6, 2.4, 0, 0.6, 1.4, 0, 0.5, -0.5, -0.4, 0.4, -10], s: [0.4, 1.55, 0.0, 0, -0.2, 1.0, 0, 0.8, -0.3, -0.6, 0.3, 18] },                // パイルバンカー
+      b: { w: [0.2, 1.4, 1.6, 0, 0.6, 1.4, 0, 0.4, -0.4, -0.4, 0.4, 6], s: [-0.4, -0.6, 2.2, 0, 0.6, 1.4, 0, 0.3, -0.4, -0.6, 0.6, -16] },                  // バックブースト: 後ろへ噴射しながらひじ
+      u: { w: [0.3, 0.4, 1.9, 0, 0.6, 1.4, 0, 0.7, -1.0, -0.3, 0.9, 0], s: [-0.2, 2.95, 0.1, 0, 0.8, 1.3, 0, 0.3, -0.2, -0.3, 0.2, 6] },                      // アッパーギア
+      d: { w: [0.3, 0.6, 1.5, 0, 0.6, 1.5, 0, 1.0, -1.5, 0.2, -1.0, -2], s: [0.45, 0.8, 1.3, 0, 0.7, 1.3, 0, 1.45, -0.05, -0.8, -1.0, 14] },                 // レッグカッター
+      da: { w: [0.6, 0.2, 1.4, 0, 0.3, 1.4, 0, 0.8, -0.6, -0.6, 0.5, -10], s: [0.85, 1.0, 1.0, 0, 0.8, 1.0, 0, 0.9, -0.2, -0.9, 0.4, 26] },                  // ブーストタックル(肩から)
+      an: { w: [-0.3, 0.2, 1.6, 0, 0.6, 1.2, 0, 0.6, -1.0, 0.1, -0.6, -4], s: [0.3, 1.9, 0.3, 0, -0.3, 1.2, 0, 0.6, -0.8, -0.1, -0.5, 8] },                  // スピンアーム
+      af: { w: [0.2, 0.8, 1.4, 0, 0.8, 1.4, 0, 1.1, -1.6, 0.2, -1.0, 0], s: [-0.3, 0.8, 1.4, 0, 0.8, 1.4, 0, 1.5, 0.0, -0.2, -0.6, 12] },                    // ジェットキック
+      au: { w: [0.3, 0.5, 1.6, 0, 0.5, 1.6, 0, 0.8, -1.2, 0.2, -0.8, 0], s: [-0.4, 2.8, 0.4, 0, 2.6, 0.4, 0, 0.9, -0.6, 0.0, -0.5, 2] },                     // アンテナスパーク: 両手を上へ
+      ad: { w: [-0.2, 2.9, 0.3, 0, 2.9, 0.3, 0, 0.8, -1.3, 0.3, -1.0, 0], s: [0.4, 0.8, 0.2, 0, 0.8, 0.2, 0, 0.5, -0.6, 0.2, -0.6, 4] },                      // ドロップハンマー: 両こぶしを振り下ろす
+      s: { w: [-0.2, -0.4, 2.3, 0, 0.6, 1.4, 0, 0.5, -0.5, -0.4, 0.4, -8], s: [0.25, 1.55, 0.0, 0, 0.6, 1.4, 0, 0.6, -0.4, -0.5, 0.35, 8] },                 // ロケットパンチ: 腕を突き出す(こぶしが飛ぶ)
+      sf: { w: [0.2, 0.0, 2.3, 0, 0.6, 1.4, 0, 0.8, -0.8, -0.5, 0.5, -8], s: [0.55, 1.55, 0.0, 0, 0.4, 1.2, 0, 1.0, -0.3, -0.8, 0.3, 22] },                 // ドリルブレイカー
+      sb: { w: [0.0, 1.4, 1.8, 0, 1.4, 1.8, 0, 0.5, -0.6, -0.5, 0.6, 0], s: [-0.05, 1.7, 0.4, 0, 1.7, 0.4, 0, 0.6, -0.7, -0.6, 0.7, 0] },                    // フォースフィールド: 両手を広げて壁を張る
+      su: { w: [0.35, 0.4, 1.8, 0, 0.5, 1.6, 0, 1.0, -1.5, 0.2, -1.1, 0], s: [-0.2, 3.05, 0.05, 0, 1.0, 1.0, 0, 0.6, -0.5, -0.3, -0.2, 6] },                  // ジェットアッパー
+      sd: { w: [0.1, 0.9, 1.4, 0, 0.9, 1.4, 0, 0.5, -0.6, -0.4, 0.5, 0], s: [-0.15, 1.4, 1.4, 0, 1.3, 1.4, 0, 0.6, -0.7, -0.5, 0.6, -2] },                   // ミサイルポッド: 肩のポッドを開く
+      c1: { w: [0.0, 0.6, 1.4, 0, 0.6, 1.4, 0, 0.4, -0.4, -0.4, 0.4, 0, , , , 0.3], s: [0.1, 0.6, 1.4, 0, 0.6, 1.4, 0, 0.45, -0.45, -0.45, 0.45, 0, , , , 0.3] },   // レーザーアイ: 構えたまま目から撃つ
+      c2: { w: [0.3, 1.5, 0.2, 0, 1.4, 0.2, 0, 0.8, -0.4, -0.5, 0.3, 10], s: [0.3, 1.5, 0.2, 0, 1.4, 0.2, 0, 0.8, -0.4, -0.5, 0.3, 10] },                     // ギガントプレス(つかみに行く)
+      gx: { w: [0.2, 0.6, 1.6, 0, 0.6, 1.6, 0, 0.6, -0.8, -0.5, 0.7, 0], s: [-0.2, 2.0, 0.6, 0, 2.0, 0.6, 0, 0.4, -0.4, -0.4, 0.4, 0] },                     // クーラント・パージ: 全身から蒸気
+      sx: { w: [-0.2, 0.6, 1.8, 0, 0.6, 1.8, 0, 0.6, -0.6, -0.5, 0.5, -10], s: [0.2, 1.55, 0.0, 0, 1.5, 0.05, 0, 0.8, -0.4, -0.7, 0.4, 6] },                 // フルバースト: 両腕を前へ
+    },
+    combos: ['Z→→Z→A ロケットパンチ (戻るこぶしでもう一度)', '↓Z→↓↘→+Z レーザーアイ', '熱が7割をこえたら ZとA同時 クーラント・パージで冷やす', '相手が跳んだら ↓A ミサイルポッド→↑Z アッパーギア'],
+    moves: {
+      n: { name: 'ピストンジャブ', startup: 4, active: 2, recovery: 7, damage: 5, knockX: 3, knockY: -1, hitstun: 15, effect: { preset: 'steel', size: 0.6 }, box: { x: 30, y: -88, w: 52, h: 24 } },
+      f: { name: 'パイルバンカー', startup: 11, active: 4, recovery: 18, damage: 10, knockX: 8, knockY: -3, hitstun: 24, launch: { x: 4 }, effect: { preset: 'steel', attack: [{ type: 'impact', at: 'hitbox', x: 30, r: 26 }, { type: 'steam', at: 'front', r: 30, count: 5 }], hit: [{ type: 'impact', r: 38 }, { type: 'gear', r: 30, count: 5 }, { type: 'shake', duration: 6, power: 4 }] }, box: { x: 30, y: -92, w: 92, h: 34 } },
+      b: { name: 'バックブースト', startup: 6, active: 5, recovery: 13, damage: 6, knockX: 6, knockY: -2, hitstun: 20, launch: { x: -8 }, effect: { preset: 'thruster', attack: [{ type: 'flame', at: 'body', x: 20, dir: 'forward', rise: 3, count: 3, duration: 10 }] }, box: { x: 10, y: -92, w: 62, h: 52 } },
+      u: { name: 'アッパーギア', startup: 7, active: 5, recovery: 18, damage: 8, knockX: 2, knockY: -11, hitstun: 26, effect: { preset: 'steel', attack: [{ type: 'slash', angle: -1, width: 10 }, { type: 'gear', at: 'head', r: 24, count: 3 }] }, box: { x: 0, y: -162, w: 62, h: 102 } },
+      d: { name: 'レッグカッター', startup: 7, active: 4, recovery: 12, damage: 6, knockX: 3, knockY: -1, hitstun: 22, effect: { preset: 'steel', attack: [{ type: 'slash', angle: 1, width: 7 }, { type: 'particles', at: 'feet', x: 60, count: 8, color: '#ffd07a', gravity: 0.3, speed: 5 }] }, box: { x: 28, y: -24, w: 72, h: 24 } },
+      da: { name: 'ブーストタックル', startup: 9, active: 10, recovery: 18, armor: 1, damage: 8, knockX: 7, knockY: -4, hitstun: 24, heat: 10, launch: { x: 14 }, effect: 'thruster', box: { x: 10, y: -100, w: 72, h: 80 } }, // 1回まで攻撃を受けても止まらない
+      an: { name: 'スピンアーム', landLag: 6, startup: 5, active: 6, recovery: 10, damage: 5, knockX: 2, knockY: -3, hitstun: 16, effect: { preset: 'steel', size: 0.8 }, box: { x: -20, y: -96, w: 82, h: 62 } },
+      af: { name: 'ジェットキック', landLag: 10, startup: 7, active: 6, recovery: 12, damage: 7, knockX: 5, knockY: -3, hitstun: 20, launch: { x: 5 }, effect: { preset: 'thruster', attack: [{ type: 'flame', at: 'body', x: -20, dir: 'back', rise: 3, count: 3, duration: 8 }] }, box: { x: 15, y: -70, w: 72, h: 46 } },
+      au: { name: 'アンテナスパーク', landLag: 8, startup: 6, active: 5, recovery: 11, damage: 6, knockX: 2, knockY: -9, hitstun: 20, effect: { preset: 'thunder', color: '#7ae0ff', attack: [{ type: 'spark', at: 'head', length: 70 }, { type: 'flash', at: 'head', blend: 'add', r: 30 }] }, box: { x: -25, y: -162, w: 70, h: 92 } },
+      ad: { name: 'ドロップハンマー', landLag: 14, startup: 9, active: 10, recovery: 16, damage: 10, knockX: 2, knockY: 8, spike: 5, hitstun: 24, launch: { x: 0, y: 15 }, effect: { preset: 'steel', hit: [{ type: 'impact', r: 40 }, { type: 'ring', flat: true, r: 60, width: 5 }, { type: 'shake', duration: 8, power: 5 }] }, box: { x: -20, y: -15, w: 62, h: 92 } },
+      s: { name: 'ロケットパンチ', startup: 12, active: 3, recovery: 20, damage: 0, knockX: 0, knockY: 0, hitstun: 0, heat: 22, effect: { preset: 'thruster', attack: [{ type: 'steam', at: 'front', r: 30, count: 6 }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      sf: { name: 'ドリルブレイカー', startup: 10, active: 16, recovery: 22, damage: 3, hits: 5, hitInterval: 3, hitStop: 4, knockX: 2, knockY: -2, hitstun: 24, heat: 25, launch: { x: 8 },
+        effect: { preset: 'steel', attack: [{ type: 'burst', at: 'hitbox', x: 20, r: 30, count: 10, spin: 4, duration: 16 }, { type: 'particles', count: 14, speed: 7, color: '#ffd07a', gravity: 0.3 }, { type: 'flame', at: 'body', x: -24, dir: 'back', rise: 4, count: 3, duration: 14 }] }, box: { x: 20, y: -96, w: 92, h: 40 } },
+      // フォースフィールド: 体の前に力場を張る。3回まで攻撃を受け止め(アーマー)、大きく押し返す
+      sb: { name: 'フォースフィールド', startup: 6, active: 16, recovery: 18, armor: 3, damage: 6, knockX: 12, knockY: -3, hitstun: 22, heat: 20,
+        effect: { preset: 'barrier', color: '#5ad8ff', color2: '#e8fbff', attack: [{ type: 'ring', at: 'body', r: 80, width: 6, duration: 18, follow: true }, { type: 'flash', at: 'body', r: 70, blend: 'add', duration: 16, follow: true, color: '#5ad8ff' }] }, box: { x: -40, y: -132, w: 152, h: 132 } },
+      su: { name: 'ジェットアッパー', startup: 5, active: 10, recovery: 28, invincible: 6, damage: 13, knockX: 3, knockY: -12, hitstun: 28, heat: 25, launch: { x: 3, y: -14 },
+        effect: { preset: 'thruster', attack: [{ type: 'flame', at: 'feet', dir: 'down', rise: 5, count: 6, duration: 16 }, { type: 'slash', angle: -1, width: 12 }, { type: 'steam', at: 'feet', r: 40, count: 6 }] }, box: { x: -10, y: -162, w: 72, h: 162 } },
+      sd: { name: 'ミサイルポッド', startup: 14, active: 3, recovery: 22, damage: 0, knockX: 0, knockY: 0, hitstun: 0, heat: 30, box: { x: 0, y: 0, w: 0, h: 0 },
+        projectile: { speed: 7, damage: 6, count: 2, spread: 1.2, radius: 10, life: 110, knockX: 3, knockY: -6, hitstun: 22, look: 'missile', path: { type: 'homing', turn: 0.06, delay: 12, angle: -60 }, from: { x: -10, y: -112 } },
+        effect: { preset: 'steel', attack: [{ type: 'steam', at: 'head', x: -10, r: 30, count: 6 }, { type: 'flash', at: 'head', r: 30, blend: 'add', color: '#ffb070' }] } },
+      // レーザーアイ: 目から細く長い光線(頭の高さ。しゃがんだ相手には当たらない)
+      c1: { name: 'レーザーアイ', command: '↓↘→+Z', startup: 9, active: 6, recovery: 16, damage: 6, knockX: 3, knockY: -1, hitstun: 20, heat: 15, rank: 4,
+        effect: { color: '#ff3a3a', color2: '#ffffff', start: [{ type: 'flash', at: 'head', y: 30, r: 16, blend: 'add', duration: 9, follow: true }], attack: [{ type: 'laser', at: 'base', length: 300, width: 5, duration: 10 }], hit: [{ type: 'burst', r: 22 }, { type: 'gear', r: 18, count: 2 }] },
+        box: { x: 30, y: -114, w: 302, h: 14 } },
+      // ギガントプレス: つかんで真上へ跳び、地面へ押しつぶす(コマンド投げ)
+      c2: { name: 'ギガントプレス', command: '↓↙←+A', startup: 7, active: 3, recovery: 30, damage: 16, knockX: 4, knockY: -5, hitstun: 30, heat: 20, rank: 4, spike: 4,
+        grab: { dir: 'd', box: { x: 0, y: -102, w: 72, h: 92 }, release: 34, total: 60, leap: 90, color: '#ff8a3a' },
+        effect: { preset: 'thruster', hit: [{ type: 'impact', r: 50 }, { type: 'gear', r: 46, count: 6 }, { type: 'steam', at: 'feet', r: 60, count: 8 }, { type: 'shake', duration: 12, power: 7 }] } },
+      // クーラント・パージ: 熱をすべて逃がし(オーバーヒートも直る)、蒸気で突き放す
+      gx: { name: 'クーラント・パージ', cost: 25, vent: true, startup: 6, active: 8, recovery: 18, damage: 6, knockX: 10, knockY: -4, hitstun: 24,
+        effect: { color: '#e8eef4', color2: '#ffffff', attack: [{ type: 'steam', at: 'body', r: 120, count: 18, duration: 34 }, { type: 'ring', at: 'body', r: 100, width: 5 }, { type: 'flash', at: 'body', r: 80, blend: 'add', color: '#9fe6ff' }] }, box: { x: -70, y: -132, w: 202, h: 132 } },
+      // フルバースト: ミサイルとビームを一斉に撃つ(撃つと熱が60たまる)
+      sx: { name: 'フルバースト', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 12, active: 30, recovery: 34, damage: 5, hits: 7, hitInterval: 4, hitStop: 4, knockX: 2, knockY: -2, hitstun: 30, heat: 60,
+        effect: { preset: 'steel', strength: 2, start: [{ type: 'flash', at: 'front', r: 40, blend: 'add', duration: 12, follow: true, color: '#ffb070' }],
+          attack: [{ type: 'laser', at: 'base', length: 520, width: 26, duration: 32, color: '#ff6a3a', color2: '#fff8e0' }, { type: 'missile', at: 'head', x: -10, r: 30, duration: 24 }, { type: 'missile', at: 'head', x: -10, y: -20, r: 30, duration: 24, delay: 6 },
+            { type: 'gear', at: 'hitbox', r: 120, count: 10, duration: 30 }, { type: 'steam', at: 'body', r: 60, count: 10, duration: 30 }, { type: 'text', text: 'FULL BURST', at: 'head', delay: 12 }],
+          hit: [{ type: 'impact', r: 26 }] },
+        box: { x: 30, y: -112, w: 522, h: 72 } },
+    },
+  },
+  {
+    name: 'カルタ',
+    desc: 'カードの奇術師:当たるたびに運だめし・瞬間移動',
+    // 性能  技の性能そのものは平均的。カードの技は当たるたびに絵柄を引き(♠ ダメージ×1.5 / ♥ 体力+4 / ♦ SP+10 / ♣ 相手の硬直+10F)、
+    //   サイコロの技は出目でダメージが ×0.5〜×2.0。「イリュージョン」で相手の後ろへ、「すりかえ」で相手と位置を入れかえる
+    stats: { hp: 100, jumpStartup: 4, landLag: 3, airLandLag: 8, speed: 4.3, jump: -13.5, airJumps: 1, dashSpeed: 9.5, shield: 60 },
+    ko: { type: 'fly', vx: 7, vy: -9, spin: -6.28, bounce: 1, slide: 0.88, air: 'tuck', lie: 'back', dust: '#ffd0d8' }, // くるりと回って飛ばされ、帽子が落ちる
+    sp: { max: 100, time: 0.012, hit: 0.6, combo: 1, hurt: 0.35, color: '#e0304a' },
+    projectile: { speed: 12, damage: 5, radius: 11, life: 60, knockX: 4, knockY: -2, hitstun: 20, luck: 'suit', look: 'card', path: 'straight', from: { x: 40, y: -84 } },
+    look: { smooth: { atk: 0.72, move: 0.34 }, color: '#1e1a2a', skin: '#f6dccc' },
+    throw: {
+      reach: [0.35, 1.5, 0.3, 0, 1.4, 0.3, 0, 0.8, -0.4, -0.5, 0.3, 10],
+      name: '投げ', box: { x: 0, y: -85, w: 58, h: 75 },
+      startup: 6, active: 3, whiff: 22, release: 30, total: 56,
+      f: { name: 'カードトス', damage: 10, vx: 10, vy: -6, hitstun: 26, effect: { preset: 'card', hit: [{ type: 'cards', r: 40, count: 8 }] } },
+      b: { name: 'ミスディレクション', damage: 9, vx: 9, vy: -6, hitstun: 26, effect: { preset: 'card', hit: [{ type: 'cards', r: 40, count: 6 }, { type: 'flash', r: 40, blend: 'add', color: '#ffe14a' }] } },
+      u: { name: 'シルクハット・リフト', damage: 7, vx: 1, vy: -15, hitstun: 30, effect: { preset: 'card', hit: [{ type: 'cards', r: 50, count: 10 }, { type: 'star', count: 5, r: 20, spin: 2, color: '#ffe14a' }] } },
+      d: { name: 'ラストカード', damage: 11, vx: 3, vy: -6, hitstun: 30, spike: 3, effect: { preset: 'card', hit: [{ type: 'cards', r: 50, count: 8 }, { type: 'impact', r: 36, color: '#e0304a' }, { type: 'shake', duration: 8, power: 5 }] } },
+    },
+    hitPoses: { head: [-0.3, 0.9, 1.9, 0, 0.7, 2, 0, 0.5, -0.6, -0.3, 0.5, 0] },
+    poses: {
+      idle: [0.0, 1.0, 1.4, 0.3, 0.3, 0.9, 0, 0.2, -0.1, -0.5, 0.4, 0, , , , , 1.8],      // 待機(カードを扇に開いて胸の前に。片足を引いて立つ)
+      walk: [0.08, 0.35, 0.7, 0.7],
+      guard: [0.05, 1.4, 2.0, 0.3, 1.0, 2.3, 0, 0.35, -0.45, -0.3, 0.35, 0],
+      crouch: [0.3, 1.1, 1.6, 0, 0.7, 1.8, 0, 1.2, -1.6, -0.9, 1.4, 0],
+      jumpSquat: [0.4, 0.2, 1.0, 0, 0.0, 1.0, 0, 1.15, -1.75, -1, 1.75, -2],
+      landing: [0.4, 1.3, 0.5, 0, 0.8, 0.6, 0, 1.2, -1.6, -0.5, 0.9, 4],
+      dashF: [0.5, 1.6, 0.6, 0, -0.4, 1.0, 0, 1.0, -0.7, -0.8, 0.6, 0],
+      dashB: [-0.25, 1.0, 1.4, 0, 0.4, 1.9, 0, 0.7, -0.9, 0.1, -0.4, 0],
+      jumpUp: [-0.1, 2.4, 0.4, 0.3, 1.0, 1.2, 0, 0.9, -1.4, 0.2, -0.6, 0],
+      fall: [0.05, 1.6, 0.9, 0, 1.0, 0.9, 0, 0.3, -0.4, 0.1, -0.5, 0],
+    },
+    // 右腕(手前)= カードの束を持つ手 / 左腕(奥)= カードを放つ手
+    motions: {
+      n: { w: [-0.1, 0.4, 2.0, 0.4, 0.4, 1.5, 0, 0.4, -0.4, -0.3, 0.3, -4], s: [0.2, 1.7, 0.1, -0.4, 0.4, 1.4, 0, 0.5, -0.4, -0.4, 0.35, 12] },               // カードスラッシュ
+      f: { w: [-0.3, -0.5, 1.4, 0.4, 0.7, 1.4, 0, 0.6, -0.6, -0.5, 0.5, -8], s: [0.4, 2.0, 0.3, -0.5, -0.3, 1.1, 0, 0.9, -0.3, -0.8, 0.3, 18] },             // トランプフラッシュ
+      b: { w: [0.2, 1.0, 1.6, 0, 0.6, 1.6, 0, 0.6, -0.6, -0.3, 0.5, 2], s: [-0.4, 0.8, 1.6, 0, 1.6, 0.1, 0, 0.9, -1.4, 0.4, -0.9, -10] },                   // ダブルダウン: 後ろへ跳んでカードを投げる
+      u: { w: [0.2, 0.4, 1.8, 0, 0.5, 1.6, 0, 0.6, -1.0, -0.3, 0.9, 0], s: [-0.3, 2.9, 0.4, 0.4, 0.8, 1.3, 0, 0.3, -0.2, -0.3, 0.2, 4] },                    // シルクハット: 帽子をはね上げる
+      d: { w: [0.4, 0.6, 1.5, 0, 0.6, 1.5, 0, 1.1, -1.6, 0.2, -1.0, -2], s: [0.5, 1.0, 1.2, 0, 0.8, 1.2, 0, 1.5, -0.05, -0.9, -1.1, 18] },                  // スライドカット: すべり込む
+      da: { w: [0.5, -0.6, 2.0, 0, 0.9, 1.2, 0, 1.1, -0.9, -0.7, 0.6, -10], s: [0.7, 1.8, 0.2, -0.4, -0.5, 0.8, 0, 1.0, -0.2, -1.0, 0.4, 22] },             // ラッシュディール
+      an: { w: [-0.4, -0.4, 1.2, 0.3, 0.4, 1.2, 0, 0.9, -1.4, 0.3, -1.0, -4], s: [0.4, 2.1, 0.2, -0.3, -0.5, 1.0, 0, 0.7, -1.0, -0.2, -0.7, 10] },          // カードスピン
+      af: { w: [0.3, 2.4, 0.5, 0.3, 1.0, 1.2, 0, 1.0, -1.4, 0.3, -0.9, -4], s: [0.3, 0.9, 0.2, -0.3, 0.6, 1.2, 0, 0.7, -0.8, -0.2, -0.6, 12] },             // ハイカード
+      au: { w: [0.3, 0.5, 1.6, 0, 0.4, 1.5, 0, 1.0, -1.4, 0.4, -1.0, 0], s: [-0.6, 3.0, 0.1, 0.3, 2.0, 0.6, 0, 1.6, -0.3, 0.3, -0.6, 2] },                   // ジョーカーフリップ: 宙返り
+      ad: { w: [0.1, 2.0, 0.6, 0, 1.6, 0.8, 0, 0.9, -1.5, 0.5, -1.2, 0], s: [0.4, 0.6, 0.6, 0, 0.5, 0.8, 0, 1.3, -0.1, 0.3, -1.2, 12] },                     // ジョーカーダイブ
+      s: { w: [-0.2, 0.4, 1.9, 0, -0.2, 2.2, 0.4, 0.5, -0.5, -0.4, 0.4, -6], s: [0.25, 1.0, 1.4, 0, 1.6, 0.05, -0.3, 0.6, -0.4, -0.5, 0.35, 10] },          // カードショット: 奥の手で弾く
+      sf: { w: [0.2, 0.4, 1.4, 0.3, 0.4, 1.4, 0, 0.9, -0.9, -0.5, 0.5, -6], s: [0.55, 1.9, 0.2, -0.4, 1.6, 0.2, 0, 1.1, -0.4, -0.8, 0.4, 22] },             // ロイヤルストレート
+      sb: { w: [0.1, 2.6, 0.4, 0, 0.5, 1.2, 0, 0.4, -0.4, -0.3, 0.3, 0], s: [0.3, 1.6, 0.2, -0.3, 0.6, 1.4, 0, 0.6, -0.5, -0.5, 0.4, 10] },                  // イリュージョン: マントを翻して消える → 後ろから
+      su: { w: [0.3, 0.4, 1.8, 0, 0.4, 1.6, 0, 1.0, -1.5, 0.2, -1.1, 0], s: [-0.4, 3.0, 0.2, 0.3, 2.6, 0.3, 0, 1.0, -1.0, 0.0, -0.4, 4] },                   // ハットトリック
+      sd: { w: [-0.1, -0.2, 1.8, 0, 0.5, 1.6, 0, 0.6, -0.8, -0.4, 0.6, -6], s: [0.4, 0.7, 0.3, 0, 0.6, 1.4, 0, 1.0, -1.0, -0.7, 0.5, 12] },                 // ダイスロール: 低く転がす
+      c1: { w: [-0.2, 0.6, 1.8, 0.3, 0.6, 1.8, 0, 0.5, -0.5, -0.4, 0.4, -6], s: [0.3, 1.9, 0.2, -0.5, 1.4, 0.2, 0, 0.7, -0.4, -0.6, 0.35, 10] },              // デッキシャッフル: 両手から扇に放つ
+      c2: { w: [0.0, 2.8, 0.2, 0.4, 0.3, 1.6, 0, 0.3, -0.3, -0.3, 0.3, 0], s: [-0.1, 2.0, 1.4, 0.4, 0.3, 1.6, 0, 0.3, -0.3, -0.3, 0.3, 0] },                  // すりかえ: 指を鳴らす
+      gx: { w: [0.0, 2.6, 0.3, 0.3, 0.4, 1.6, 0, 0.4, -0.4, -0.3, 0.3, 0], s: [0.35, 1.6, 0.1, -0.3, 1.5, 0.1, 0, 0.8, -0.4, -0.7, 0.4, 14] },              // ワイルドカード: 1枚引いて突き出す
+      sx: { w: [-0.2, 2.6, 0.4, 0.3, 2.6, 0.4, 0, 0.5, -0.5, -0.4, 0.4, 0], s: [0.3, 1.6, 0.1, -0.3, 1.6, 0.1, 0, 0.8, -0.4, -0.7, 0.4, 12] },               // ジャックポット
+    },
+    combos: ['Z→→Z→A カードショット (絵柄で効果が変わる)', '↓Z→↓↘→+A デッキシャッフル (5枚の扇)', '←A イリュージョン (相手の後ろへ回って攻める)', '画面端で ↓↙←+Z すりかえ (位置を入れかえる)'],
+    moves: {
+      n: { name: 'カードスラッシュ', startup: 4, active: 2, recovery: 6, damage: 4, knockX: 3, knockY: -2, hitstun: 15, effect: { preset: 'card', size: 0.6 }, box: { x: 26, y: -84, w: 50, h: 24 } },
+      f: { name: 'トランプフラッシュ', startup: 8, active: 4, recovery: 12, damage: 8, knockX: 6, knockY: -3, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', width: 8, span: 2.6, color: '#ffffff' }, { type: 'cards', r: 34, count: 5 }] }, box: { x: 28, y: -96, w: 86, h: 46 } },
+      // ダブルダウン: 後ろへ跳びながらカードを1枚、斜め下へ投げる(運だめし)
+      b: { name: 'ダブルダウン', startup: 8, active: 3, recovery: 14, damage: 0, knockX: 0, knockY: 0, hitstun: 0, launch: { x: -7, y: -6 }, box: { x: 0, y: 0, w: 0, h: 0 },
+        projectile: { speed: 10, damage: 4, radius: 10, life: 40, path: { type: 'straight', angle: 18 } }, effect: { preset: 'card', attack: [{ type: 'cards', at: 'body', r: 24, count: 3 }] } },
+      u: { name: 'シルクハット', startup: 6, active: 5, recovery: 17, damage: 7, knockX: 2, knockY: -11, hitstun: 24, effect: { preset: 'card', attack: [{ type: 'crescent', angle: -1, width: 9, span: 2.8, color: '#ffffff' }, { type: 'star', at: 'head', count: 4, r: 16, spin: 2, color: '#ffe14a' }] }, box: { x: -10, y: -162, w: 62, h: 102 } },
+      d: { name: 'スライドカット', startup: 6, active: 4, recovery: 11, damage: 5, knockX: 3, knockY: -1, hitstun: 22, launch: { x: 4 }, effect: { preset: 'card', attack: [{ type: 'lines', count: 3, at: 'feet', y: -10, length: 60 }, { type: 'cards', at: 'feet', x: 40, y: -10, r: 20, count: 3 }] }, box: { x: 30, y: -24, w: 66, h: 24 } },
+      da: { name: 'ラッシュディール', startup: 6, active: 9, recovery: 14, damage: 3, hits: 3, hitInterval: 3, hitStop: 4, knockX: 3, knockY: -2, hitstun: 20, launch: { x: 12 }, effect: { preset: 'card', attack: [{ type: 'lines', count: 4, at: 'body', length: 100 }, { type: 'cards', r: 40, count: 6 }] }, box: { x: 20, y: -86, w: 66, h: 52 } },
+      an: { name: 'カードスピン', landLag: 4, startup: 4, active: 7, recovery: 9, damage: 4, knockX: 2, knockY: -3, hitstun: 16, effect: { preset: 'card', attack: [{ type: 'crescent', width: 6, span: 3.4, color: '#ffffff' }, { type: 'cards', at: 'body', r: 34, count: 4 }] }, box: { x: -15, y: -90, w: 75, h: 52 } },
+      af: { name: 'ハイカード', landLag: 9, startup: 6, active: 5, recovery: 11, damage: 7, knockX: 5, knockY: -4, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', angle: 1, width: 9, span: 2.4, color: '#ffffff' }] }, box: { x: 20, y: -96, w: 80, h: 56 } },
+      au: { name: 'ジョーカーフリップ', landLag: 7, startup: 5, active: 5, recovery: 10, damage: 5, knockX: 2, knockY: -9, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', angle: -1, width: 8, span: 3 }] }, box: { x: -25, y: -152, w: 70, h: 82 } },
+      ad: { name: 'ジョーカーダイブ', landLag: 10, startup: 7, active: 10, recovery: 12, damage: 7, knockX: 3, knockY: 5, hitstun: 22, launch: { x: 5, y: 12 }, effect: { preset: 'card', hit: [{ type: 'cards', r: 40, count: 6 }, { type: 'ring', flat: true, r: 40 }] }, box: { x: 0, y: -42, w: 60, h: 52 } },
+      s: { name: 'カードショット', startup: 9, active: 3, recovery: 15, damage: 0, knockX: 0, knockY: 0, hitstun: 0, effect: { preset: 'card', attack: [{ type: 'cards', at: 'front', r: 20, count: 2 }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      sf: { name: 'ロイヤルストレート', startup: 9, active: 18, recovery: 20, damage: 4, hits: 5, hitInterval: 3, hitStop: 4, knockX: 2, knockY: -2, hitstun: 22, launch: { x: 13 },
+        effect: { preset: 'card', attack: [{ type: 'lines', count: 5, at: 'body', length: 120 }, { type: 'cards', at: 'body', r: 60, count: 10, duration: 22, follow: true }, { type: 'text', text: '10 J Q K A', at: 'head', delay: 4 }] }, box: { x: 10, y: -96, w: 82, h: 72 } },
+      // イリュージョン: 出始め無敵で消え、相手の後ろに現れて打つ
+      sb: { name: 'イリュージョン', startup: 10, active: 4, recovery: 12, invincible: 14, warp: 'behind', damage: 6, knockX: 5, knockY: -3, hitstun: 22,
+        effect: { preset: 'card', start: [{ type: 'cards', at: 'body', r: 50, count: 10, duration: 14 }], attack: [{ type: 'crescent', width: 9, span: 2.4, color: '#ffffff' }, { type: 'flash', at: 'body', r: 40, blend: 'add', color: '#ffe14a' }] }, box: { x: 10, y: -92, w: 62, h: 62 } },
+      su: { name: 'ハットトリック', startup: 5, active: 10, recovery: 26, invincible: 5, damage: 4, hits: 3, hitInterval: 3, hitStop: 4, knockX: 2, knockY: -8, hitstun: 26, launch: { x: 2, y: -12 },
+        effect: { preset: 'card', attack: [{ type: 'cards', at: 'body', r: 60, count: 10, duration: 20, follow: true }, { type: 'crescent', angle: -1, width: 10, span: 3 }, { type: 'star', count: 5, r: 18, spin: 2, color: '#ffe14a' }] }, box: { x: -15, y: -152, w: 76, h: 152 } },
+      // ダイスロール: 地面を転がる大きなサイコロ。出目でダメージが変わる
+      sd: { name: 'ダイスロール', startup: 14, active: 3, recovery: 22, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
+        projectile: { speed: 6.5, damage: 6, radius: 18, life: 100, luck: 'dice', knockX: 4, knockY: -7, hitstun: 24, look: 'dice', path: 'ground', from: { x: 40, y: -20 } },
+        effect: { preset: 'card', attack: [{ type: 'cards', at: 'front', r: 24, count: 3 }] } },
+      c1: { name: 'デッキシャッフル', command: '↓↘→+A', startup: 12, active: 3, recovery: 22, damage: 0, knockX: 0, knockY: 0, hitstun: 0, rank: 4, box: { x: 0, y: 0, w: 0, h: 0 },
+        projectile: { speed: 11, damage: 3, count: 5, spread: 1.4, radius: 10, life: 50 },
+        effect: { preset: 'card', start: [{ type: 'cards', at: 'front', r: 30, count: 6, duration: 12, follow: true }] } },
+      // すりかえ: 指を鳴らして、相手と立ち位置を入れかえる(ダメージなし)
+      c2: { name: 'すりかえ', command: '↓↙←+Z', startup: 12, active: 1, recovery: 14, damage: 0, knockX: 0, knockY: 0, hitstun: 0, warp: 'swap', rank: 3,
+        effect: { preset: 'card', start: [{ type: 'star', at: 'front', count: 4, r: 14, spin: 2, color: '#ffe14a' }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      // ワイルドカード: 引いたカードで中身が変わる(ジャック=大ダメージ / クイーン=回復 / キング=3枚の大きなカード)
+      gx: { name: 'ワイルドカード', cost: 25, startup: 8, active: 5, recovery: 20, damage: 8, knockX: 8, knockY: -4, hitstun: 26, box: { x: 20, y: -112, w: 112, h: 92 },
+        effect: { preset: 'card', strength: 1.5, start: [{ type: 'cards', at: 'body', r: 40, count: 6, duration: 12 }] },
+        variants: [
+          { name: 'ワイルドカード:ジャック', damage: 15, knockX: 11, knockY: -6, hitstun: 30, effect: { preset: 'card', strength: 2, attack: [{ type: 'crescent', width: 14, span: 3, color: '#ffffff' }, { type: 'cards', r: 60, count: 10 }, { type: 'text', text: 'J', at: 'head' }] } },
+          { name: 'ワイルドカード:クイーン', heal: 18, damage: 5, knockX: 10, knockY: -3, hitstun: 22, effect: { preset: 'card', attack: [{ type: 'bloom', at: 'body', r: 50, count: 10, color: '#ff5a7a', color2: '#ffffff', blend: 'add' }, { type: 'cards', at: 'body', r: 60, count: 8 }, { type: 'text', text: 'Q', at: 'head' }] } },
+          { name: 'ワイルドカード:キング', damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 }, projectile: { speed: 9, damage: 7, count: 3, spread: 1.0, radius: 18, life: 70, luck: 'suit', look: { preset: 'card', size: 1.6 } },
+            effect: { preset: 'card', attack: [{ type: 'cards', at: 'front', r: 40, count: 6 }, { type: 'text', text: 'K', at: 'head' }] } },
+        ] },
+      // ジャックポット: スロットの絵柄が回り、7回切り刻む(1回ごとにサイコロの出目でダメージが変わる)
+      sx: { name: 'ジャックポット', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 10, active: 35, recovery: 30, damage: 4, hits: 7, hitInterval: 5, hitStop: 4, luck: 'dice', knockX: 1, knockY: -2, hitstun: 30,
+        effect: { preset: 'card', strength: 2, attack: [{ type: 'cards', at: 'hitbox', r: 110, count: 20, duration: 38 }, { type: 'star', at: 'head', count: 7, r: 26, spin: 3, color: '#ffe14a', duration: 30 }, { type: 'text', text: '7 7 7', at: 'head', delay: 10 }], hit: [{ type: 'cards', r: 22, count: 3 }] },
+        box: { x: 20, y: -142, w: 202, h: 142 } },
     },
   },
 ];

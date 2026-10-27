@@ -211,6 +211,86 @@ const PROJECTILE_LOOKS = {
     hit: [{ type: 'bloom', r: 22, count: 6, duration: 12, blend: 'add' }, { type: 'petals', count: 6, dir: 'all', speed: 3 }],
     vanish: [{ type: 'petals', count: 5, dir: 'all', speed: 1.5 }],
   },
+  // ---- 風(ハヤテ) ----
+  // 鎌鼬: 回りながら飛ぶ風の刃。行って戻ってくる(boomerang)
+  windBlade: {
+    color: '#9ff0d6', color2: '#ffffff', spin: 0.45, glow: 0.9, pulse: 0.06,
+    body: [{ type: 'crescent', size: 1.4, thick: 0.35 }, { type: 'crescent', size: 1.0, color: '#ffffff', alpha: 0.7, spin: 0.3, thick: 0.25, add: true }],
+    trail: [{ type: 'ghost', count: 3, gap: 2 }, { type: 'particles', rate: 0.6, life: 14, gravity: 0, color: '#e8fff6' }],
+    spawn: [{ type: 'gust', r: 30, duration: 10 }],
+    hit: [{ type: 'gust', r: 34, duration: 12 }, { type: 'cross', r: 18, duration: 8 }],
+    vanish: [{ type: 'gust', r: 24, duration: 10 }],
+  },
+  // 竜巻: その場で止まって浮き上がる(rise)。何回も当たる
+  tornado: {
+    color: '#bff5e6', color2: '#ffffff', glow: 0.6,
+    body: [{ type: 'tornado', size: 1.25 }],
+    trail: [{ type: 'particles', rate: 1.2, life: 18, gravity: -0.12, spread: 1.2, color: '#e8fff6' }],
+    spawn: [{ type: 'gust', r: 40, duration: 14 }, { type: 'ring', flat: true, r: 34, duration: 12 }],
+    hit: [{ type: 'gust', r: 30, duration: 10 }],
+    vanish: [{ type: 'gust', r: 40, duration: 14 }],
+  },
+  // ---- 氷(セツカ) ----
+  // 氷槍: だんだん速くなる長い氷のやり
+  iceLance: {
+    color: '#9fe6ff', color2: '#ffffff', face: 'velocity', glow: 1, pulse: 0.04,
+    body: [{ type: 'shard', size: 2.6 }, { type: 'shard', size: 1.6, color: '#ffffff', alpha: 0.75, add: true }],
+    trail: [{ type: 'line', length: 7, width: 0.5, color: '#cff4ff' }, { type: 'sparkle', rate: 0.8, life: 24, color: '#e8fbff', color2: '#9fe6ff' }],
+    spawn: [{ type: 'snow', r: 26, count: 6, duration: 16 }],
+    hit: [{ type: 'icicle', r: 26, count: 4, duration: 16, color: '#9fe6ff', color2: '#ffffff' }, { type: 'snow', r: 30, count: 8, duration: 20 }],
+    vanish: [{ type: 'snow', r: 22, count: 5, duration: 16 }],
+  },
+  // 氷河走り: 地面を這う氷の波
+  frostWave: {
+    color: '#9fe6ff', color2: '#ffffff', glow: 0.5,
+    body: [{ type: 'wave', size: 1.1 }],
+    trail: [{ type: 'particles', rate: 1.5, life: 26, gravity: -0.02, color: '#e8fbff' }],
+    hit: [{ type: 'icicle', r: 30, count: 5, duration: 18 }],
+    vanish: [{ type: 'snow', r: 26, count: 6, duration: 18 }],
+  },
+  // ---- 草(シゲル) ----
+  seed: {
+    color: '#7ad04a', color2: '#ff8ac8', glow: 0.3,
+    body: [{ type: 'seed', size: 1.1 }],
+    trail: [{ type: 'particles', rate: 0.3, life: 12, gravity: 0.1, color: '#c8ff7a' }],
+    hit: [{ type: 'leaves', r: 30, count: 8, duration: 26 }, { type: 'thorns', r: 22, count: 3, duration: 14, color: '#3a7a2a', color2: '#bff07a' }],
+    vanish: [{ type: 'leaves', r: 18, count: 4, duration: 20 }],
+  },
+  leafBlade: {
+    color: '#6ad04a', color2: '#e8ffb0', spin: 0.35, glow: 0.4,
+    body: [{ type: 'petal', size: 1.6 }],
+    trail: [{ type: 'ghost', count: 2, gap: 2 }],
+    hit: [{ type: 'leaves', r: 24, count: 6, duration: 22 }],
+  },
+  // ---- 鋼(ギア) ----
+  rocketFist: {
+    color: '#c8d0da', color2: '#3ad0ff', glow: 0.4,
+    body: [{ type: 'fist', size: 1.15 }],
+    trail: [{ type: 'fire', rate: 2, life: 14, size: 0.6, color: '#ff8a3a' }, { type: 'smoke', rate: 0.6, life: 20 }],
+    spawn: [{ type: 'flash', r: 22, blend: 'add', duration: 6, color: '#ffb070' }, { type: 'steam', r: 24, count: 5, duration: 14 }],
+    hit: [{ type: 'impact', r: 30, color: '#ffb040', color2: '#fff8e0' }, { type: 'gear', r: 26, count: 4, duration: 18 }],
+  },
+  missile: {
+    color: '#e8ecf0', color2: '#e03a3a', face: 'velocity', glow: 0.3,
+    body: [{ type: 'missile', size: 1.0 }],
+    trail: [{ type: 'smoke', rate: 0.7, life: 20, size: 0.6 }, { type: 'particles', rate: 1, life: 8, gravity: 0, color: '#ffb040' }],
+    hit: [{ type: 'flame', r: 26, duration: 12, color: '#ff8a3a', color2: '#ffe08a' }, { type: 'burst', r: 26 }, { type: 'gear', r: 22, count: 3 }],
+    vanish: [{ type: 'burst', r: 20 }, { type: 'steam', r: 18, count: 4 }],
+  },
+  // ---- 自由(カルタ) ----
+  card: {
+    color: '#e0304a', color2: '#ffffff', spin: 0.55, glow: 0.3,
+    body: [{ type: 'card', size: 1.3 }],
+    trail: [{ type: 'ghost', count: 3, gap: 1 }],
+    hit: [{ type: 'cards', r: 24, count: 4, duration: 16 }],
+    vanish: [{ type: 'cards', r: 18, count: 3, duration: 14 }],
+  },
+  dice: {
+    color: '#e0304a', color2: '#ffffff', spin: 0.3, glow: 0.2,
+    body: [{ type: 'dice', size: 1.0 }],
+    trail: [{ type: 'ghost', count: 2, gap: 2 }, { type: 'particles', rate: 0.6, life: 12, gravity: 0.1, color: '#ffe14a' }],
+    hit: [{ type: 'cards', r: 30, count: 6, duration: 18 }, { type: 'impact', r: 30 }],
+  },
   // ---- 自由に使える見本 ----
   // 星: くるくる回る星 + きらきら
   star: {
@@ -262,6 +342,8 @@ const PROJECTILE_PATHS = {
   stop: { decel: 0.94 },                          // だんだん遅くなって、その場に止まる(設置。寿命まで残る)。decel=1Fごとに速さに掛ける数
   homing: { turn: 0.05, delay: 10 },              // 相手を追いかける。turn=1Fに曲がれる角度(rad) delay=追い始めるまでのF
   boomerang: { back: 0.35 },                      // 前に飛んで戻ってくる(自分の所に戻ると消える)。back=戻る力(大きいほど早く戻る)
+  seed: { up: 6, gravity: 0.3, trap: 420 },       // 種(シゲル): 放物線で飛び、地面に落ちると芽になって trap F 残る(踏むと当たる。elements.js)
+  rise: { decel: 0.9, lift: 0.6 },                // 竜巻(ハヤテ): 前に進みながら止まり、少しずつ浮き上がる。lift=上がる速さ
 };
 
 // ---- ここから下は処理(ふだんは触らなくてOK) ----
@@ -282,6 +364,7 @@ function pjSpec(ch, m) {
   const s = {
     v: raw.speed ?? 6, d: raw.damage ?? 6, r: raw.radius ?? 12, n: raw.count ?? 1, sp: raw.spread ?? 0, life: raw.life ?? 90,
     kx: raw.knockX ?? 4, ky: raw.knockY ?? -4, hs: raw.hitstun ?? 22,
+    hitsN: raw.hits ?? 1, hitEvery: raw.hitEvery ?? 10, chill: raw.chill || 0, luck: raw.luck || null,   // 多段(hits 回まで当たる)/ 凍結 / 運(elements.js)
     from: { x: 40, y: -70, ...(path.from || raw.from || {}) }, look, path,
   };
   if (m) m[key] = s;
@@ -297,10 +380,10 @@ function makeProjectiles(ch, m, x, y, f, tgt, own) {
     const j = {
       x: x + f * s.from.x, y: y + s.from.y,
       vx: f * spd * Math.cos(ang), vy: spd * Math.sin(ang) + (n - (s.n - 1) / 2) * s.sp,
-      f, f0: f, own, tgt, s, P, d: s.d * (own && own.crAtk ? CROUCH_ATTACK : 1), r: s.r, life: s.life, age: 0, spin: 0, hist: [],
+      f, f0: f, ni: n, own, tgt, s, P, d: s.d * (own && own.crAtk ? CROUCH_ATTACK : 1), r: s.r, life: s.life, age: 0, spin: 0, hist: [],
     };
     if (P.type === 'ground') { j.y = GY - j.r; j.vy = 0; }
-    if (P.type === 'arc') j.vy -= P.up ?? 7;
+    if (P.type === 'arc' || P.type === 'seed') j.vy -= P.up ?? 7;
     if (P.type === 'wave') { j.bx = j.x; j.by = j.y; j.ph = n * 0.8; }
     list.push(j);
   }
@@ -335,6 +418,30 @@ function stepProjectile(j) {
     case 'ground':
       j.x += j.vx;
       j.y = GY - j.r;
+      break;
+    case 'seed': {                                 // 種: 落ちたら芽(罠)になってその場に残る
+      if (j.burst) break;
+      if (!j.planted) {
+        j.vy += P.gravity ?? 0.3;
+        j.x += j.vx;
+        j.y += j.vy;
+        if (j.y >= GY - j.r) {
+          j.planted = true;
+          j.y = GY - j.r;
+          j.vx = j.vy = 0;
+          j.life = P.trap ?? 420;
+          j.r = Math.max(j.r, 16);
+          j.pass = null;
+          pjEffect(j, [{ type: 'leaves', count: 5, r: 20, duration: 24 }, { type: 'ring', flat: true, r: 18, duration: 10 }], 'attack');
+        }
+      }
+      break;
+    }
+    case 'rise':
+      j.vx *= P.decel ?? 0.9;
+      if (Math.abs(j.vx) < 0.05) j.vx = 0;
+      j.x += j.vx;
+      j.y = Math.max(GY - 220, j.y - (P.lift ?? 0.6) * (j.age > 20 ? 1 : 0));
       break;
     case 'accel': {
       const sp = Math.min(j.s.v, Math.hypot(j.vx, j.vy) + (P.accel ?? 0.4)), a = Math.atan2(j.vy, j.vx);
@@ -390,7 +497,8 @@ const cloneProjectile = (j) => ({ ...j, hist: [] });
 function spawnProjectiles(p, m, o) {
   const list = makeProjectiles(p.ch, m, p.x, p.y, p.f, o, p);
   const s = list[0] && list[0].s;
-  for (const j of list) { j.mid = p.mvId; j.aqk = m.k; PJ.push(j); } // mid = 撃った技(試合の記録の「命中」に使う) / aqk = 水まといの追撃をどの技の設定で出すか
+  for (const j of list) { j.mid = p.mvId; j.aqk = m.k; PJ.push(j); }
+  if (s && s.path.type === 'seed' && typeof seedLimit === 'function') seedLimit(p);   // 種は SEED_MAX 個まで(elements.js) // mid = 撃った技(試合の記録の「命中」に使う) / aqk = 水まといの追撃をどの技の設定で出すか
   if (s && s.look.spawn) pjEffect(list[0], s.look.spawn, 'attack');
 }
 
@@ -415,10 +523,12 @@ function updateProjectiles(A, B) {
     const t = j.own === A ? B : A;
     const hit = hitPartForRect(t, { x: j.x - j.r, y: j.y - j.r, w: j.r * 2, h: j.r * 2 });
     // 無敵(ダッシュの無敵など)で重なった弾はすり抜ける。重なっている間に無敵が切れても当たらない(体から離れたら、また当たるようになる)
+    if (j.cd > 0) { j.cd--; if (--j.life <= 0) return pjEffect(j, j.s.look.vanish, 'attack'), false; return true; }   // 多段の弾: 次に当たれるまで待つ
+    if (j.gone) return false;
     if (hit && (j.pass === t || (typeof dashInvuln === 'function' && (dashInvuln(t) || moveInvuln(t))))) j.pass = t;
     else if (!hit && j.pass === t) j.pass = null;
     if (hit && j.pass !== t) {
-      const r = applyHit({ f: j.f, vx: 0, own: j.own, mid: j.mid, aqk: j.aqk, aqf: j.aqf }, t, { d: j.d, kx: j.s.kx, ky: j.s.ky, hs: j.s.hs }, hit.zone, hit.y);
+      const r = applyHit({ f: j.f || (t.x > j.x ? 1 : -1), vx: 0, own: j.own, mid: j.mid, aqk: j.aqk, aqf: j.aqf }, t, { d: j.d, kx: j.kx ?? j.s.kx, ky: j.ky ?? j.s.ky, hs: j.s.hs, chill: j.s.chill, luck: j.s.luck }, hit.zone, hit.y);
       if (r === 'jg') {
         // ジャストガード: 跳ね返す(軌道はまっすぐに変わり、1.3倍の速さで撃った側へ飛ぶ)
         const sp = Math.max(Math.abs(j.vx), j.s.v) * 1.3;
@@ -434,6 +544,10 @@ function updateProjectiles(A, B) {
         return true;
       }
       pjEffect(j, j.s.look.hit, 'hit');
+      if (j.s.hitsN > 1 && !j.burst) {             // 多段の弾(竜巻など): hits 回まで当たる
+        j.hitsLeft = (j.hitsLeft ?? j.s.hitsN) - 1;
+        if (j.hitsLeft > 0) { j.cd = j.s.hitEvery; return true; }
+      }
       return false;
     }
     if (--j.life <= 0) return pjEffect(j, j.s.look.vanish, 'attack'), false;
@@ -779,6 +893,91 @@ const PJ_SHAPES = {
     g.beginPath();
     g.arc(0, 0, r * 0.5, 0, 7);
     g.stroke();
+  },
+  // ---- 新しいキャラの弾の部品 ----
+  tornado(r, c, cc, b, j) {
+    // 竜巻: 下が細く上が広い。回る楕円の重なり(弾の中心が真ん中)
+    const rot = (j ? j.age : 0) * 0.5, H = r * 3.2;
+    g.lineWidth = Math.max(2, r * 0.14);
+    for (let i = 0; i < 8; i++) {
+      const t = i / 7, yy = H * 0.5 - H * t, rw = r * (0.25 + 0.95 * t);
+      g.strokeStyle = i % 3 === 0 ? cc : c;
+      g.beginPath();
+      g.ellipse(Math.sin(rot * 0.6 + t * 3) * r * 0.15, yy, rw, rw * 0.24 + 1, 0, rot + i, rot + i + 4.6);
+      g.stroke();
+    }
+  },
+  seed(r, c, cc, b, j) {
+    if (!j || !j.planted) {                       // 飛んでいる種(しずく形のどんぐり)
+      g.fillStyle = '#8a5a2a';
+      g.beginPath(); g.ellipse(0, 0, r * 0.7, r * 0.55, 0, 0, 7); g.fill();
+      g.strokeStyle = '#3a2410'; g.lineWidth = 1.5; g.stroke();
+      g.fillStyle = c;
+      g.beginPath(); g.ellipse(-r * 0.15, -r * 0.35, r * 0.5, r * 0.22, -0.3, 0, 7); g.fill();
+      return;
+    }
+    // 芽(罠): 土の盛り上がりと双葉。開花の直前(burst)は大きなつぼみ
+    const grow = Math.min(1, (j.age - (j.plantAge ?? 0)) / 20 + 0.3), sway = Math.sin(j.age * 0.1) * 0.15;
+    g.fillStyle = '#6a4a2a';
+    g.beginPath(); g.ellipse(0, r * 0.8, r * 1.1, r * 0.35, 0, Math.PI, 0); g.fill();
+    g.strokeStyle = '#2a5a1a'; g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(0, r * 0.8); g.quadraticCurveTo(r * 0.1, 0, sway * r * 2, -r * 0.6 * grow); g.stroke();
+    for (const s2 of [-1, 1]) {
+      g.save(); g.translate(sway * r * 2, -r * 0.6 * grow); g.rotate(s2 * 0.9 + sway);
+      g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(s2 * r * 0.5, -r * 0.6, s2 * r * 1.0 * grow, -r * 0.15);
+      g.quadraticCurveTo(s2 * r * 0.5, r * 0.15, 0, 0);
+      g.fillStyle = c; g.fill(); g.strokeStyle = '#1e4a12'; g.lineWidth = 1.2; g.stroke();
+      g.restore();
+    }
+    if (j.burst) { g.fillStyle = cc; g.beginPath(); g.arc(sway * r * 2, -r * 0.8, r * 0.5, 0, 7); g.fill(); }
+  },
+  fist(r, c, cc) {
+    // 鉄のこぶし(ロケットパンチ): 指の段と手首のノズル
+    g.fillStyle = '#5a6068';
+    g.fillRect(-r * 1.5, -r * 0.45, r * 0.7, r * 0.9);           // 手首(ノズル)
+    g.fillStyle = c;
+    g.beginPath();
+    g.moveTo(-r * 0.9, -r * 0.75); g.lineTo(r * 0.6, -r * 0.8); g.quadraticCurveTo(r * 1.05, -r * 0.6, r * 1.0, 0);
+    g.quadraticCurveTo(r * 1.05, r * 0.65, r * 0.6, r * 0.8); g.lineTo(-r * 0.9, r * 0.75); g.closePath();
+    g.fill();
+    g.strokeStyle = '#1a1c20'; g.lineWidth = 1.8; g.stroke();
+    g.lineWidth = 1.2;
+    for (const yy of [-0.4, 0, 0.4]) { g.beginPath(); g.moveTo(r * 0.25, yy * r); g.lineTo(r * 0.95, yy * r); g.stroke(); }
+    g.fillStyle = cc; g.fillRect(-r * 0.7, -r * 0.2, r * 0.5, r * 0.4);
+  },
+  missile(r, c, cc) {
+    g.fillStyle = c;
+    g.beginPath();
+    g.moveTo(r * 1.4, 0); g.quadraticCurveTo(r * 0.9, -r * 0.5, 0, -r * 0.45); g.lineTo(-r * 1.1, -r * 0.45);
+    g.lineTo(-r * 1.1, r * 0.45); g.lineTo(0, r * 0.45); g.quadraticCurveTo(r * 0.9, r * 0.5, r * 1.4, 0); g.closePath();
+    g.fill();
+    g.strokeStyle = '#1a1c20'; g.lineWidth = 1.4; g.stroke();
+    g.fillStyle = cc;
+    g.beginPath(); g.moveTo(-r * 0.7, -r * 0.45); g.lineTo(-r * 1.3, -r * 0.95); g.lineTo(-r * 1.1, -r * 0.45); g.fill();
+    g.beginPath(); g.moveTo(-r * 0.7, r * 0.45); g.lineTo(-r * 1.3, r * 0.95); g.lineTo(-r * 1.1, r * 0.45); g.fill();
+    g.fillStyle = '#ffb040';
+    g.beginPath(); g.moveTo(-r * 1.1, -r * 0.3); g.lineTo(-r * 1.9, 0); g.lineTo(-r * 1.1, r * 0.3); g.fill();
+  },
+  card(r, c, cc, b, j) {
+    const w = r * 1.2, h = r * 1.7;
+    g.fillStyle = '#fffdf6';
+    g.fillRect(-w / 2, -h / 2, w, h);
+    g.strokeStyle = '#1a1a24'; g.lineWidth = 1.4; g.strokeRect(-w / 2, -h / 2, w, h);
+    g.strokeStyle = c; g.lineWidth = 1.2; g.strokeRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4);
+    const suit = '♠♥♦♣'[(j ? (j.mid | 0) + (j.ni | 0) : 0) & 3];
+    g.fillStyle = suit === '♥' || suit === '♦' ? '#e0304a' : '#1a1a24';
+    g.font = 'bold ' + Math.round(r * 0.95) + 'px sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(suit, 0, 1);
+  },
+  dice(r, c, cc) {
+    g.fillStyle = '#fffdf6';
+    g.beginPath();
+    if (g.roundRect) g.roundRect(-r, -r, r * 2, r * 2, r * 0.35); else g.rect(-r, -r, r * 2, r * 2);
+    g.fill();
+    g.strokeStyle = '#1a1a24'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = c;
+    for (const [dx, dy] of [[-0.5, -0.5], [0.5, 0.5], [0, 0], [0.5, -0.5], [-0.5, 0.5]]) { g.beginPath(); g.arc(dx * r, dy * r, r * 0.17, 0, 7); g.fill(); }
   },
   wave(r, c, cc) {
     // 地面を走る衝撃波: 下が地面。前に向かって立ち上がる半円の波を3重に
