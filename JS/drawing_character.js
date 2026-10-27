@@ -1600,7 +1600,7 @@ const CHARACTER_DRAWS = {
       belt: false,
     },
 
-    headShape: 'animeGirl',   // 丸い頬・小さなあご(子どもの顔)
+    headShape: 'illustGirl',
     hair: [
       { type: 'long', color: '#c8b4e8', length: 1.0, volume: 9, wave: 0.15, tip: 'point' },        // 薄紫の長い髪(腰まで)
       { type: 'jaggedBangs', color: '#c8b4e8', length: 0.5, count: 8, seed: 2, width: 0.2 },
