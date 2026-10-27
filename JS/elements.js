@@ -15,12 +15,12 @@
 //       1人 SEED_MAX 個まで(多いと古い芽から消える)。技に bloom: true … 出した瞬間に自分の芽を全部「開花」させる(まわりに当たる)
 //   ■ 熱(ギア)              heat: { max, decay, lock, color } … 技に heat: 数値 を書くと、出すたびに熱がたまる
 //       max に届くと OVERHEAT: lock F のあいだ heat を書いた技が出せない(Z の技になる)。技に vent: true … 熱をすべて逃がす
-//   ■ 運(カルタ)            技・弾に luck: 'suit' / 'dice'
-//       suit … 当たるたびにカードの絵柄を引く ♠ ダメージ×1.5 / ♥ 自分の体力+4 / ♦ SP+10 / ♣ 相手の硬直+10F
-//       dice … サイコロの出目(1〜6)でダメージが ×0.5〜×2.0
+//   ■ カードの順番(カルタ)  弾に luck: 'suit' … 投げるカードの絵柄は いつも ♠ → ♥ → ♦ → ♣ → ♠ … の順番(運の要素はない)
+//       次に出る絵柄は HUD に出る。当たると絵柄ごとの効果 ♠ ダメージ×1.5 / ♥ 自分の体力+4 / ♦ SP+10 / ♣ 相手の硬直+10F
+//       技に suitPick: true + variants … 次の絵柄で中身が決まる(ワイルドカード: ♠ ジャック / ♥ クイーン / ♦ キング / ♣ エース)。使うと絵柄が1つ進む
 //   ■ ワープ(カルタ)        技に warp: 'behind'(相手の後ろへ) / 'swap'(相手と位置を入れかえる) … 発生の瞬間に移動する
 //   ■ 回復                   技に heal: 数値 … 発生の瞬間に自分の体力が戻る
-//   ■ 運だめし               技に variants: [ {上書き}, ... ] … 出すたびにどれか1つ(ゲーム用の乱数で選ぶ)になる
+//   ■ 技の中身の切りかえ     技に variants: [ {上書き}, ... ] … suitPick なら次の絵柄の順番で、そうでなければゲーム用の乱数で1つ選ぶ
 // ============================================================
 
 const AIR_DASH = { frames: 14, speed: 9.5, attackFrom: 5 };
@@ -164,15 +164,18 @@ function photoStep(p) {
   }
 }
 
-// ---- 運 ----
+// ---- カードの順番 ----
+//  次の絵柄の番号(0=♠ 1=♥ 2=♦ 3=♣)を返して、1つ進める
+function nextSuit(p) {
+  const i = (p.suitIdx | 0) % 4;
+  p.suitIdx = (i + 1) % 4;
+  return i;
+}
+//  当たったカードの効果。m.suit = そのカードの絵柄の番号(弾を投げた瞬間に決まる)
 //  戻り値: { mul, heal, sp, stun, text, c } (当たったときの効果)
 function luckRoll(m) {
-  if (!m || !m.luck) return null;
-  if (m.luck === 'dice') {
-    const n = 1 + ((R() * 6) | 0);
-    return { mul: 0.5 + (n - 1) * 0.3, text: '出目 ' + n + (n === 6 ? '!!' : n === 1 ? '…' : ''), c: n >= 5 ? '#ffe14a' : n <= 2 ? '#aab' : '#fff', dice: n };
-  }
-  const S = LUCK_SUITS[(R() * 4) | 0];
+  if (!m || m.suit == null) return null;
+  const S = LUCK_SUITS[m.suit & 3];
   return { mul: S.mul || 1, heal: S.heal || 0, sp: S.sp || 0, stun: S.stun || 0, text: S.s + ' ' + S.name, c: S.c, suit: S.s };
 }
 function luckApply(L, owner, o, x, y) {

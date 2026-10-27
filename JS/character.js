@@ -89,7 +89,7 @@
 // 【counter】 カウンター。技に counter: { 技の項目 } を書くと、その技の持続の間に打撃を受けたとき、ダメージを受けずに counter の技が出る(ルリの逆流)
 //   飛び道具を受けたときは跳ね返す(ジャストガードと同じ)。counter の技の見た目は motions の「技の名前_ctr」(例: c2_ctr)。invincible で無敵を付けられる
 // 【新しい5人のしくみ】(処理は elements.js、説明は game_spec.js の 15-2章)
-//   技: chill=相手を冷やす(100 で凍る) shatter=凍った相手に大ダメージ heat=熱がたまる vent=熱を0に luck='suit'/'dice'=運だめし
+//   技: chill=相手を冷やす(100 で凍る) shatter=凍った相手に大ダメージ heat=熱がたまる vent=熱を0に luck: 'suit'(弾)=カードの絵柄が ♠♥♦♣ の順番で効果が変わる suitPick=次の絵柄で variants を選ぶ
 //       warp='behind'/'swap'=瞬間移動・位置の入れかえ heal=体力回復 bloom=自分の芽を開花 variants=[{...}]=出すたびにどれか1つ
 //   キャラ: stats.airDash=空中ダッシュの回数 stats.photosynthesis={ delay, rate }=立ち止まると回復 heat={ max, decay, lock, color }
 //   弾: hits / hitEvery=何回も当たる chill / luck。軌道 path: 'seed'(落ちると芽の罠) / 'rise'(止まって浮き上がる竜巻)
@@ -1737,9 +1737,10 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
   },
   {
     name: 'カルタ',
-    desc: 'カードの奇術師:当たるたびに運だめし・瞬間移動',
-    // 性能  技の性能そのものは平均的。カードの技は当たるたびに絵柄を引き(♠ ダメージ×1.5 / ♥ 体力+4 / ♦ SP+10 / ♣ 相手の硬直+10F)、
-    //   サイコロの技は出目でダメージが ×0.5〜×2.0。「イリュージョン」で相手の後ろへ、「すりかえ」で相手と位置を入れかえる
+    desc: 'カードの奇術師:絵柄の順番で効果が変わるカード・瞬間移動',
+    // 性能  技の性能そのものは平均的。投げるカードの絵柄は ♠ → ♥ → ♦ → ♣ の順番で決まっていて(運の要素はない)、次の絵柄は HUD に出る。
+    //   当たると絵柄ごとの効果(♠ ダメージ×1.5 / ♥ 体力+4 / ♦ SP+10 / ♣ 相手の硬直+10F)。ワイルドカード(ゲージ技)も次の絵柄で中身が決まる。
+    //   「イリュージョン」で相手の後ろへ、「すりかえ」で相手と位置を入れかえる
     stats: { hp: 100, jumpStartup: 4, landLag: 3, airLandLag: 8, speed: 4.3, jump: -13.5, airJumps: 1, dashSpeed: 9.5, shield: 60 },
     ko: { type: 'fly', vx: 7, vy: -9, spin: -6.28, bounce: 1, slide: 0.88, air: 'tuck', lie: 'back', dust: '#ffd0d8' }, // くるりと回って飛ばされ、帽子が落ちる
     sp: { max: 100, time: 0.012, hit: 0.6, combo: 1, hurt: 0.35, color: '#e0304a' },
@@ -1793,15 +1794,15 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
     moves: {
       n: { name: 'カードフリック', startup: 4, active: 3, recovery: 6, damage: 4, knockX: 2, knockY: -4, hitstun: 15, effect: { preset: 'card', size: 0.6, attack: [{ type: 'crescent', angle: -1, width: 6, span: 1.8, color: '#ffffff' }] }, box: { x: 15, y: -120, w: 52, h: 48 } }, // 斜め上へはじく。高い所に当たる(跳ぼうとした相手を止める)
       f: { name: 'トランプフラッシュ', startup: 8, active: 4, recovery: 12, damage: 8, knockX: 6, knockY: -3, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', width: 8, span: 2.6, color: '#ffffff' }, { type: 'cards', r: 34, count: 5 }] }, box: { x: 28, y: -96, w: 86, h: 46 } },
-      // ダブルダウン: 後ろへ跳びながらカードを1枚、斜め下へ投げる(運だめし)
+      // ダブルダウン: 後ろへ跳びながらカードを1枚、斜め下へ投げる(絵柄の順番どおりの効果)
       b: { name: 'ダブルダウン', startup: 8, active: 3, recovery: 14, damage: 0, knockX: 0, knockY: 0, hitstun: 0, launch: { x: -7, y: -6 }, box: { x: 0, y: 0, w: 0, h: 0 },
         projectile: { speed: 10, damage: 4, radius: 10, life: 40, path: { type: 'straight', angle: 18 } }, effect: { preset: 'card', attack: [{ type: 'cards', at: 'body', r: 24, count: 3 }] } },
       u: { name: 'ハットスロー', startup: 7, active: 3, recovery: 18, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
         projectile: { speed: 9, damage: 6, radius: 16, life: 34, knockX: 2, knockY: -10, hitstun: 24, look: { preset: 'card', size: 1.6 }, path: { type: 'straight', angle: -72 }, from: { x: 20, y: -120 } },
-        effect: { preset: 'card', attack: [{ type: 'star', at: 'head', count: 4, r: 14, spin: 2, color: '#ffe14a' }] } }, // 斜め上へ大きなカードを投げる対空(運だめし)
+        effect: { preset: 'card', attack: [{ type: 'star', at: 'head', count: 4, r: 14, spin: 2, color: '#ffe14a' }] } }, // 斜め上へ大きなカードを投げる対空(絵柄の順番どおりの効果)
       d: { name: 'ローカード', startup: 6, active: 3, recovery: 12, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
         projectile: { speed: 11, damage: 4, radius: 9, life: 22, knockX: 3, knockY: -1, hitstun: 20, path: 'ground', from: { x: 30, y: -10 } },
-        effect: { preset: 'card', attack: [{ type: 'lines', count: 2, at: 'feet', y: -10, length: 50 }] } }, // 地面すれすれにカードを飛ばす(短い距離。運だめし)
+        effect: { preset: 'card', attack: [{ type: 'lines', count: 2, at: 'feet', y: -10, length: 50 }] } }, // 地面すれすれにカードを飛ばす(短い距離。絵柄の効果つき)
       da: { name: 'ラッシュディール', startup: 6, active: 9, recovery: 14, damage: 3, hits: 3, hitInterval: 3, hitStop: 4, knockX: 3, knockY: -2, hitstun: 20, launch: { x: 12 }, effect: { preset: 'card', attack: [{ type: 'lines', count: 4, at: 'body', length: 100 }, { type: 'cards', r: 40, count: 6 }] }, box: { x: 20, y: -86, w: 66, h: 52 } },
       an: { name: 'カードスピン', landLag: 4, startup: 4, active: 7, recovery: 9, damage: 4, knockX: 2, knockY: -3, hitstun: 16, effect: { preset: 'card', attack: [{ type: 'crescent', width: 6, span: 3.4, color: '#ffffff' }, { type: 'cards', at: 'body', r: 34, count: 4 }] }, box: { x: -15, y: -90, w: 75, h: 52 } },
       af: { name: 'ハイカード', landLag: 9, startup: 6, active: 5, recovery: 11, damage: 7, knockX: 5, knockY: -4, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', angle: 1, width: 9, span: 2.4, color: '#ffffff' }] }, box: { x: 20, y: -96, w: 80, h: 56 } },
@@ -1819,9 +1820,9 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
       su: { name: 'ハットトリック', startup: 5, active: 12, recovery: 24, invincible: 6, damage: 4, hits: 3, hitInterval: 4, hitStop: 4, knockX: 2, knockY: -8, hitstun: 26,
         turn: [{ at: 'startup', body: 3 }, { at: 8, body: -3 }, { at: 12, body: 3 }, { at: 'recovery', body: 1 }],
         effect: { preset: 'card', attack: [{ type: 'cards', at: 'body', r: 70, count: 12, duration: 20, follow: true }, { type: 'star', count: 5, r: 18, spin: 2, color: '#ffe14a' }] }, box: { x: -55, y: -152, w: 120, h: 152 } },
-      // ダイスロール: 地面を転がる大きなサイコロ。出目でダメージが変わる
+      // ダイスロール: 地面を転がる大きなサイコロ。2回まで当たる
       sd: { name: 'ダイスロール', startup: 14, active: 3, recovery: 22, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
-        projectile: { speed: 6.5, damage: 6, radius: 18, life: 100, luck: 'dice', knockX: 4, knockY: -7, hitstun: 24, look: 'dice', path: 'ground', from: { x: 40, y: -20 } },
+        projectile: { speed: 6.5, damage: 5, radius: 18, life: 100, hits: 2, hitEvery: 14, knockX: 2, knockY: -6, hitstun: 24, look: 'dice', path: 'ground', from: { x: 40, y: -20 } },
         effect: { preset: 'card', attack: [{ type: 'cards', at: 'front', r: 24, count: 3 }] } },
       c1: { name: 'デッキシャッフル', command: '↓↘→+A', startup: 12, active: 3, recovery: 22, damage: 0, knockX: 0, knockY: 0, hitstun: 0, rank: 4, box: { x: 0, y: 0, w: 0, h: 0 },
         projectile: { speed: 11, damage: 3, count: 5, spread: 1.4, radius: 10, life: 50 },
@@ -1829,17 +1830,18 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
       // すりかえ: 指を鳴らして、相手と立ち位置を入れかえる(ダメージなし)
       c2: { name: 'すりかえ', command: '↓↙←+Z', startup: 12, active: 1, recovery: 14, damage: 0, knockX: 0, knockY: 0, hitstun: 0, warp: 'swap', rank: 3,
         effect: { preset: 'card', start: [{ type: 'star', at: 'front', count: 4, r: 14, spin: 2, color: '#ffe14a' }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
-      // ワイルドカード: 引いたカードで中身が変わる(ジャック=大ダメージ / クイーン=回復 / キング=3枚の大きなカード)
-      gx: { name: 'ワイルドカード', cost: 25, startup: 8, active: 5, recovery: 20, damage: 8, knockX: 8, knockY: -4, hitstun: 26, box: { x: 20, y: -112, w: 112, h: 92 },
+      // ワイルドカード: 次に出る絵柄(HUD に出る)で中身が決まる。♠ ジャック=大ダメージ / ♥ クイーン=回復 / ♦ キング=3枚の大きなカード / ♣ エース=長く動けなくする
+      gx: { name: 'ワイルドカード', cost: 25, suitPick: true, startup: 8, active: 5, recovery: 20, damage: 8, knockX: 8, knockY: -4, hitstun: 26, box: { x: 20, y: -112, w: 112, h: 92 },
         effect: { preset: 'card', strength: 1.5, start: [{ type: 'cards', at: 'body', r: 40, count: 6, duration: 12 }] },
         variants: [
           { name: 'ワイルドカード:ジャック', damage: 15, knockX: 11, knockY: -6, hitstun: 30, effect: { preset: 'card', strength: 2, attack: [{ type: 'crescent', width: 14, span: 3, color: '#ffffff' }, { type: 'cards', r: 60, count: 10 }, { type: 'text', text: 'J', at: 'head' }] } },
           { name: 'ワイルドカード:クイーン', heal: 18, damage: 5, knockX: 10, knockY: -3, hitstun: 22, effect: { preset: 'card', attack: [{ type: 'bloom', at: 'body', r: 50, count: 10, color: '#ff5a7a', color2: '#ffffff', blend: 'add' }, { type: 'cards', at: 'body', r: 60, count: 8 }, { type: 'text', text: 'Q', at: 'head' }] } },
-          { name: 'ワイルドカード:キング', damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 }, projectile: { speed: 9, damage: 7, count: 3, spread: 1.0, radius: 18, life: 70, luck: 'suit', look: { preset: 'card', size: 1.6 } },
+          { name: 'ワイルドカード:キング', damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 }, projectile: { speed: 9, damage: 8, count: 3, spread: 1.0, radius: 18, life: 70, luck: null, look: { preset: 'card', size: 1.6 } },   // 大きなカードは絵柄の順番を進めない
             effect: { preset: 'card', attack: [{ type: 'cards', at: 'front', r: 40, count: 6 }, { type: 'text', text: 'K', at: 'head' }] } },
+          { name: 'ワイルドカード:エース', damage: 6, knockX: 2, knockY: -2, hitstun: 46, effect: { preset: 'card', attack: [{ type: 'cross', r: 40, width: 10, color: '#7aff9a' }, { type: 'cards', r: 50, count: 8 }, { type: 'text', text: 'A', at: 'head' }] } },
         ] },
-      // ジャックポット: スロットの絵柄が回り、7回切り刻む(1回ごとにサイコロの出目でダメージが変わる)
-      sx: { name: 'ジャックポット', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 10, active: 35, recovery: 30, damage: 4, hits: 7, hitInterval: 5, hitStop: 4, luck: 'dice', knockX: 1, knockY: -2, hitstun: 30,
+      // ジャックポット: スロットの絵柄が回り、7回切り刻む
+      sx: { name: 'ジャックポット', super: true, cost: 100, invincible: 12, minScale: 0.75, startup: 10, active: 35, recovery: 30, damage: 5, hits: 7, hitInterval: 5, hitStop: 4, knockX: 1, knockY: -2, hitstun: 30,
         effect: { preset: 'card', strength: 2, attack: [{ type: 'cards', at: 'hitbox', r: 110, count: 20, duration: 38 }, { type: 'star', at: 'head', count: 7, r: 26, spin: 3, color: '#ffe14a', duration: 30 }, { type: 'text', text: '7 7 7', at: 'head', delay: 10 }], hit: [{ type: 'cards', r: 22, count: 3 }] },
         box: { x: 20, y: -142, w: 202, h: 142 } },
     },

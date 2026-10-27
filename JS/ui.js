@@ -453,6 +453,14 @@ function hudSide(p, right) {
     bar2(58, cr ? S.crash - P.crashT : P.hp, cr ? S.crash : S.hp, cr ? (fr % 20 < 10 ? '#7a5a8a' : '#4a3a5a') : P.hp < S.hp * 0.3 && fr % 16 < 8 ? '#ff8ac0' : S.color);
     T(cr ? '復活' : (S.label || '人形'), right ? W - 176 - 156 : 176 + 156, 65, 10, UI.ink, right ? 'right' : 'left');
   }
+  if (p.ch.pjRaw && p.ch.pjRaw.luck === 'suit' && typeof LUCK_SUITS !== 'undefined') {   // カルタ: 次に投げるカードの絵柄(♠→♥→♦→♣ の順番)
+    const S = LUCK_SUITS[(p.suitIdx | 0) % 4], x0 = right ? W - 176 - 150 : 176;
+    T('次のカード', x0 + (right ? 150 : 0), 66, 10, UI.ink, right ? 'right' : 'left');
+    g.fillStyle = '#fffdf6'; g.fillRect(right ? x0 + 150 - 84 - 18 : x0 + 64, 52, 16, 20);
+    g.strokeStyle = UI.ink; g.lineWidth = 1.5; g.strokeRect(right ? x0 + 150 - 84 - 18 : x0 + 64, 52, 16, 20);
+    T(S.s, (right ? x0 + 150 - 84 - 10 : x0 + 72), 67, 13, S.s === '♥' || S.s === '♦' ? '#e0304a' : '#1a1a24');
+    T(S.name, (right ? x0 + 150 - 108 : x0 + 86), 66, 10, UI.ink, right ? 'right' : 'left');
+  }
   if (p.ch.ht) {                                                    // 熱(ギア): たまるとオーバーヒート。オーバーヒート中は赤く点滅
     const oh = p.oh > 0;
     bar2(58, oh ? p.oh : p.heat || 0, oh ? p.ch.ht.lock : p.ch.ht.max, oh ? (fr % 12 < 6 ? '#ff3a1a' : '#ffb040') : (p.heat || 0) > p.ch.ht.max * 0.7 ? '#ff7a3a' : '#ffd040');

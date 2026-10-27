@@ -138,7 +138,7 @@ const buildMove = (c, k, m) => {
     bnc: m.bounce || null, flt: m.float ?? null, ub: !!m.unblockable, // unblockable: ガード・ジャストガード・しゃがみ受け流しができない(つかみ技)
     // 当たる(ガードされる)と自分が跳ね返る速さ / 空中で技の出始め〜持続の間、落ちる速さをこれ以下にする(浮いて止まる)
     fol: m.follow, veil: m.veil || 0, // 水まとい: 追撃の設定(follow) / ゲージ技で AQUA ゲージをためる量(veil)
-    chill: m.chill || 0, shatter: !!m.shatter, luck: m.luck || null, heat: m.heat || 0, vent: !!m.vent, warp: m.warp || null, heal: m.heal || 0, bloom: !!m.bloom, // 新しいキャラのしくみ(elements.js)
+    chill: m.chill || 0, shatter: !!m.shatter, suitPick: !!m.suitPick, heat: m.heat || 0, vent: !!m.vent, warp: m.warp || null, heal: m.heal || 0, bloom: !!m.bloom, // 新しいキャラのしくみ(elements.js)
     ctr: m.counter ? buildMove(c, k + '_ctr', m.counter) : null }; // カウンター: 構えの間に打撃を受けると出る技(character.js 冒頭の【counter】) // 水まとい: 追撃の設定(follow) / ゲージ技で AQUA ゲージをためる量(veil)。projectile.js の「水まとい」 // 叩きつけ(地面でバウンド) / 吸血(与えたダメージの割合だけ回復) / 血の代償(出すと自分の体力が減る)
 };
 
@@ -980,8 +980,8 @@ function begin(p, k, fromCrouch = false) {
   p.crAtk = !!fromCrouch; // しゃがみから出した技(ダメージ ×CROUCH_ATTACK)
   if (p.ch.ht && typeof heatBlock === 'function') k = heatBlock(p, k);   // オーバーヒート中は熱の技が出ない(ギア。elements.js)
   p.mv = p.ch.mv[k];
-  if (p.mv.vars) {                                  // 運だめし: どれか1つ(ゲーム用の乱数で選ぶ)
-    p.mv = p.mv.vars[(R() * p.mv.vars.length) | 0];
+  if (p.mv.vars) {                                  // 中身の切りかえ: suitPick なら次の絵柄の順番(カルタ)、そうでなければゲーム用の乱数
+    p.mv = p.mv.vars[(p.mv.suitPick && typeof nextSuit === 'function' ? nextSuit(p) : (R() * p.mv.vars.length) | 0) % p.mv.vars.length];
     fx.push({ k: 'txt', text: p.mv.nm, x: p.x, y: p.y - 175, t: 36, l: 36, c: '#ffe14a', s: 17 });
   }
   if (p.ch.ht && typeof heatAdd === 'function') heatAdd(p, p.mv);
@@ -2596,11 +2596,11 @@ function cvDraw() {
            ...(m.shatter ? [['砕氷', '凍った相手にダメージ ×' + CHILL.shatterMul + ' +' + CHILL.shatterBonus]] : []),
            ...(m.heat ? [['熱', '+' + m.heat + '(100 でオーバーヒート)']] : []),
            ...(m.vent ? [['排熱', '熱を 0 にする']] : []),
-           ...((m.luck || ((m.proj || m.k === 's') && pjSpec(c, m).luck)) ? [['運', (m.luck || pjSpec(c, m).luck) === 'dice' ? 'サイコロでダメージ ×0.5〜×2.0' : '♠ダメージ×1.5 / ♥体力+4 / ♦SP+10 / ♣硬直+10F']] : []),
+           ...(((m.proj || m.k === 's') && pjSpec(c, m).luck === 'suit') ? [['カード', '絵柄は ♠→♥→♦→♣ の順番 / ♠ダメージ×1.5 ♥体力+4 ♦SP+10 ♣硬直+10F']] : []),
            ...(m.warp ? [['移動', m.warp === 'swap' ? '相手と位置を入れかえる' : '相手の後ろへ瞬間移動']] : []),
            ...(m.heal ? [['回復', '体力 +' + m.heal]] : []),
            ...(m.bloom ? [['開花', '自分の芽をすべてはじけさせる']] : []),
-           ...(m.vars ? [['運だめし', m.vars.map((v) => v.nm.split(':').pop()).join(' / ') + ' のどれか']] : []),
+           ...(m.vars ? [[m.suitPick ? '絵柄で変わる' : '切りかえ', m.vars.map((v, i) => (m.suitPick ? '♠♥♦♣'[i] : '') + v.nm.split(':').pop()).join(' / ')]] : []),
            ...(m.ctr ? [['カウンター', '構え中に打撃→打ち返し ' + m.ctr.d + 'ダメ(無敵' + m.ctr.inv + 'F)・飛び道具は跳ね返す']] : []),
            ...(m.bnc ? [['跳ね返り', '当たる・ガードされると自分が跳ね返る']] : []),
            ...(m.ub ? [['ガード不能', 'シールド・しゃがみ受け流しで防げない(跳べば避けられる)']] : []),
@@ -3652,6 +3652,7 @@ function draw() {
         bar(x, 48, 120, p.volt || 0, V.max, full && fr % 20 < 10 ? '#fff' : V.color, rr);
         T('VOLT', rr ? x + 116 : x + 4, 64, 12, '#222', rr ? 'right' : 'left');
       }
+      for (const [p, x, rr] of [[A, 190, 0], [B, 650, 1]]) if (p.ch.pjRaw && p.ch.pjRaw.luck === 'suit') T('次のカード ' + LUCK_SUITS[(p.suitIdx | 0) % 4].s, rr ? x + 116 : x + 4, 64, 12, '#222', rr ? 'right' : 'left');   // カルタ
       for (const [p, x, rr] of [[A, 190, 0], [B, 650, 1]]) {   // 熱(ギア)・冷え(凍結)のゲージ(elements.js)
         if (p.ch.ht) bar(x, 48, 120, p.oh > 0 ? p.ch.ht.max : p.heat || 0, p.ch.ht.max, p.oh > 0 && fr % 12 < 6 ? '#ff3a1a' : '#ff9a3a', rr);
         if ((p.chill || 0) > 0 || p.frz > 0) bar(x, 74, 120, p.frz > 0 ? CHILL.max : p.chill, CHILL.max, '#9fe6ff', rr);

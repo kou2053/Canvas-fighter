@@ -497,7 +497,7 @@ const cloneProjectile = (j) => ({ ...j, hist: [] });
 function spawnProjectiles(p, m, o) {
   const list = makeProjectiles(p.ch, m, p.x, p.y, p.f, o, p);
   const s = list[0] && list[0].s;
-  for (const j of list) { j.mid = p.mvId; j.aqk = m.k; PJ.push(j); }
+  for (const j of list) { j.mid = p.mvId; j.aqk = m.k; if (s.luck === 'suit' && typeof nextSuit === 'function') j.suit = nextSuit(p); PJ.push(j); }   // カードの絵柄は順番(elements.js)
   if (s && s.path.type === 'seed' && typeof seedLimit === 'function') seedLimit(p);   // 種は SEED_MAX 個まで(elements.js) // mid = 撃った技(試合の記録の「命中」に使う) / aqk = 水まといの追撃をどの技の設定で出すか
   if (s && s.look.spawn) pjEffect(list[0], s.look.spawn, 'attack');
 }
@@ -528,7 +528,7 @@ function updateProjectiles(A, B) {
     if (hit && (j.pass === t || (typeof dashInvuln === 'function' && (dashInvuln(t) || moveInvuln(t))))) j.pass = t;
     else if (!hit && j.pass === t) j.pass = null;
     if (hit && j.pass !== t) {
-      const r = applyHit({ f: j.f || (t.x > j.x ? 1 : -1), vx: 0, own: j.own, mid: j.mid, aqk: j.aqk, aqf: j.aqf }, t, { d: j.d, kx: j.kx ?? j.s.kx, ky: j.ky ?? j.s.ky, hs: j.s.hs, chill: j.s.chill, luck: j.s.luck }, hit.zone, hit.y);
+      const r = applyHit({ f: j.f || (t.x > j.x ? 1 : -1), vx: 0, own: j.own, mid: j.mid, aqk: j.aqk, aqf: j.aqf }, t, { d: j.d, kx: j.kx ?? j.s.kx, ky: j.ky ?? j.s.ky, hs: j.s.hs, chill: j.s.chill, suit: j.suit }, hit.zone, hit.y);
       if (r === 'jg') {
         // ジャストガード: 跳ね返す(軌道はまっすぐに変わり、1.3倍の速さで撃った側へ飛ぶ)
         const sp = Math.max(Math.abs(j.vx), j.s.v) * 1.3;
@@ -964,7 +964,7 @@ const PJ_SHAPES = {
     g.fillRect(-w / 2, -h / 2, w, h);
     g.strokeStyle = '#1a1a24'; g.lineWidth = 1.4; g.strokeRect(-w / 2, -h / 2, w, h);
     g.strokeStyle = c; g.lineWidth = 1.2; g.strokeRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4);
-    const suit = '♠♥♦♣'[(j ? (j.mid | 0) + (j.ni | 0) : 0) & 3];
+    const suit = '♠♥♦♣'[(j && j.suit != null ? j.suit : j ? j.ni | 0 : 0) & 3];
     g.fillStyle = suit === '♥' || suit === '♦' ? '#e0304a' : '#1a1a24';
     g.font = 'bold ' + Math.round(r * 0.95) + 'px sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';

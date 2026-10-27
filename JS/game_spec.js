@@ -564,11 +564,12 @@
 //                  クーラント・パージ(ゲージ技 vent)で熱が 0 になる。フルバースト(超必殺技)は熱 +60
 //                  ロケットパンチ(A)= 戻ってくるこぶし / ミサイルポッド(↓A)= 追尾する2発 / レーザーアイ(↓↘→+Z)= 頭の高さの長い光線(しゃがむと当たらない)
 //                  ギガントプレス(↓↙←+A)= 真上へ跳んで押しつぶすコマンド投げ。HUD に HEAT のゲージ
-//  ・カルタ(自由) 運(技・弾の luck): suit = 当たるたびにカードを引く(♠ ダメージ ×1.5 / ♥ 自分の体力 +4 / ♦ SP +10 / ♣ 相手の硬直 +10F)
-//                  dice = サイコロの出目 1〜6 でダメージ ×0.5〜×2.0(ダイスロール ↓A・ジャックポット)
+//  ・カルタ(自由) カードの順番(運の要素はない): 投げるカード(弾の luck: 'suit')の絵柄は ♠ → ♥ → ♦ → ♣ → ♠ … の順番。投げた瞬間に絵柄が決まり、次の絵柄が HUD に出る
+//                  当たると ♠ ダメージ ×1.5 / ♥ 自分の体力 +4 / ♦ SP +10 / ♣ 相手の硬直 +10F
+//                  ワイルドカード(ゲージ技 suitPick + variants): 次の絵柄で中身が決まり、絵柄が1つ進む(♠ ジャック=大ダメージ / ♥ クイーン=体力+18 / ♦ キング=大きなカード3枚 / ♣ エース=長く動けなくする)
 //                  イリュージョン(←A): 出始め無敵で相手の後ろへ瞬間移動して打つ / すりかえ(↓↙←+Z): 相手と位置を入れかえる(ダメージなし)
-//                  ワイルドカード(ゲージ技 variants): ジャック(大ダメージ)/ クイーン(体力+18)/ キング(大きなカード3枚)のどれか
-//  ・技に書ける新しい項目(character.js): chill / shatter / heat / vent / luck / warp('behind' / 'swap') / heal / bloom / variants
+//                  ダイスロール(↓A): 地面を転がるサイコロ(2回まで当たる。出目は無い)
+//  ・技に書ける新しい項目(character.js): chill / shatter / heat / vent / suitPick / warp('behind' / 'swap') / heal / bloom / variants
 //    キャラに書ける項目: stats.airDash / stats.photosynthesis / heat。弾に書ける項目: hits / hitEvery(多段)/ chill / luck
 //  ・新しいエフェクトの部品(effect.js): gust(風の筋)/ tornado(竜巻)/ icicle(氷柱)/ thorns(いばら)/ vine(つる)/ leaves(葉)/ snow(雪の結晶)/
 //    steam(蒸気)/ gear(歯車)/ cards(トランプ)/ laser(光線)/ missile(煙の軌跡)。プリセット: gale / cyclone / frost / glacier / verdant / thorn / steel / thruster / card
