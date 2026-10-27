@@ -308,7 +308,10 @@
 // {
 //   type: "bangs",
 //
-//   style: "center",       // "center"=センター分け / "side"=横分け / "straight"=ぱっつん
+//   style: "center",       // "center"=センター分け / "side"=横分け / "straight"=ぱっつん / "seeThrough"=シースルーぱっつん
+//                          //   seeThrough: 短いぱっつんの下に、すき間から額が見える細い毛束が並ぶ(カルタ)。
+//                          //     length(毛先の低さ。省略 0.6) / drop(毛束の長さ。省略 0.38) / count(毛束の数。省略 9) /
+//                          //     width(毛束の太さの倍率) / spread(並ぶ幅の倍率)。側髪(sideburn)は straight と同じ
 //
 //   color: "#4a2c14",
 //

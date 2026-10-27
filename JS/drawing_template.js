@@ -580,6 +580,47 @@ function longHairOffscreen(cv) {
   return LONG_HAIR_OFF;
 }
 
+
+// ---- シースルーぱっつん(前髪 style: 'seeThrough') ----
+//   短いぱっつん(length - drop まで)の下に、すき間から額が見える細い毛束を count 本たらす。毛束の先は length の高さ(ふつうのぱっつんと同じ)
+//   書ける項目: length(毛先の低さ。ぱっつんと同じ 0〜1.6。省略 0.6) / drop(毛束の長さ。省略 0.38) / count(毛束の数。省略 9) /
+//              width(毛束の太さの倍率。省略 1) / spread(毛束が並ぶ幅の倍率。省略 1)
+function seeThroughLens(it) {
+  const len = Math.max(0.1, Math.min(1.6, it.length ?? 0.6)), drop = it.drop ?? 0.38;
+  return { len, top: Math.max(0, len - drop) };
+}
+function drawSeeThroughStrands(ctx, it, L, hv) {
+  const { g, K, hcy, Rh } = ctx, col = it.color || '#4a2c14',
+    n = Math.max(3, it.count ?? 9), Ut = 0.62 - 0.55 * L.top + 0.04, Ub = 0.62 - 0.55 * L.len,
+    cs = hv.cs ?? 1, sn = hv.sn ?? 0, wk = it.width ?? 1, sp = it.spread ?? 1,
+    sway = ctx.jiggle ? ctx.jiggle('seeThrough', [ctx.hcx, hcy], { k: 0.12, damp: 0.18, max: 4 })[0] : 0;
+  const pt = (th, U) => { const r = Math.sqrt(Math.max(0, 1 - U * U)) * 1.06; return [hv.S(r * Math.cos(th), r * Math.sin(th)), hcy - Rh * U]; };
+  const strands = [];
+  for (let i = 0; i < n; i++) {
+    const th = (-0.95 + (1.9 * i) / (n - 1)) * sp, depth = Math.cos(th) * sn + Math.sin(th) * cs;   // こちらを向いている度合い
+    if (depth < -0.25) continue;                                        // 頭の向こう側の毛束は描かない
+    const v = Math.sin(i * 12.9898) * 43758.5453, rnd = v - Math.floor(v),
+      Ue = Ub + (rnd - 0.5) * 0.12 + (i % 2 ? 0.05 : 0);              // 毛先の高さを少しずつずらす
+    strands.push({ th, Ue, depth, w: Rh * 0.055 * wk * (0.8 + 0.4 * rnd) });
+  }
+  strands.sort((a, b) => a.depth - b.depth);
+  for (const S of strands) {
+    const A = pt(S.th - 0.045, Ut), B = pt(S.th + 0.045, Ut), M = pt(S.th + 0.01, Ut * 0.45 + S.Ue * 0.55), E = pt(S.th + 0.02, S.Ue);
+    E[0] += sway; M[0] += sway * 0.5;
+    const half = Math.max(1.4, S.w);
+    g.beginPath();
+    g.moveTo(Math.min(A[0], B[0]) - half * 0.5, A[1]);
+    g.quadraticCurveTo(M[0] - half * 0.6, M[1], E[0], E[1]);
+    g.quadraticCurveTo(M[0] + half * 0.6, M[1], Math.max(A[0], B[0]) + half * 0.5, B[1]);
+    g.closePath();
+    g.fillStyle = K(col, -0.04);
+    g.fill();
+    g.lineWidth = 0.9 * olScale('hair');
+    g.strokeStyle = '#111';
+    g.stroke();
+  }
+}
+
 const HAIR_STYLES = {
 
   // ロングヘア(結ばない): color / length(0=あご下 0.5=背中 1=腰) / volume(後ろへの広がりpx)
@@ -663,7 +704,13 @@ const HAIR_STYLES = {
   //       そこから長い側髪が耳の前に垂れる」形で描く(正面向きのV字ではない)
   bangs(ctx, it, layer) {
     if (layer !== 'front') return;
-    if ((it.style || 'center') === 'center') return HAIR_TURNED.bangs(ctx, it, layer);   // センター分けは向き対応の描画に統一(真横も同じ形から描く)
+    if ((it.style || 'center') === 'center') return HAIR_TURNED.bangs(ctx, it, layer);
+    if (it.style === 'seeThrough') {                                    // シースルーぱっつん: 短いぱっつんの下に、すき間のある細い毛束
+      const L = seeThroughLens(it);
+      HAIR_STYLES.bangs(ctx, { ...it, style: 'straight', length: L.top }, layer);
+      drawSeeThroughStrands(ctx, it, L, { S: (F) => ctx.hcx + ctx.Rh * F, cs: 1, sn: 0 });
+      return;
+    }   // センター分けは向き対応の描画に統一(真横も同じ形から描く)
     const { g, K, ol, hcx, hcy, Rh, tr, wv } = ctx;
     const col = it.color || '#4a2c14', style = it.style || 'center',
       len = Math.max(0, Math.min(1.6, it.length ?? (style === 'straight' ? 0.5 : 0.1))),   // 1 より大きいと目にかかる長さ(シゲル)
@@ -3739,6 +3786,12 @@ const HAIR_TURNED = {
 
   bangs(ctx, it, layer) {
     if (layer !== 'front' && layer !== 'farLock') return;
+    if (it.style === 'seeThrough') {                                    // シースルーぱっつん(向きが付いた頭)
+      const L = seeThroughLens(it);
+      HAIR_TURNED.bangs(ctx, { ...it, style: 'straight', length: L.top }, layer);
+      if (layer === 'front') drawSeeThroughStrands(ctx, it, L, ctx.hv);
+      return;
+    }
     const { g, K, hcy, Rh, tr, wv, hv } = ctx;
     const col = it.color || '#4a2c14', style = it.style || 'center',
       len = Math.max(0, Math.min(1.6, it.length ?? (style === 'straight' ? 0.5 : 0.1))),   // 1 より大きいと目にかかる長さ(シゲル)

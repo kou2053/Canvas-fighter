@@ -2146,7 +2146,7 @@ const CHARACTER_DRAWS = {
     headShape: 'heroine',
     hair: [
       { type: 'long', color: '#b81e3a', length: 0.7, volume: 8, wave: 0.6, tip: 'round' },
-      { type: 'bangs', style: 'side', color: '#b81e3a', length: 0.5, sideburn: 0.9, partY: 0.3 },
+      { type: 'bangs', style: 'seeThrough', color: '#b81e3a', length: 0.95, drop: 0.85, count: 11, sideburn: 0.9 },   // シースルーぱっつん(すき間から額が見える)
     ],
     headgear: [],
     faceDeco: [{ type: 'star', x: 0.3, y: 0.28, size: 0.45, color: '#e0304a' }],   // 目の下の小さなダイヤのしるし(星で代用)
