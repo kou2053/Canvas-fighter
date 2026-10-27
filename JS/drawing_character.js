@@ -323,6 +323,151 @@ function drawNeckHeadphones(ctx, layer, o = {}) {
   cup(order[1]);
 }
 
+// ============================================================
+// 新しい5人のスキン用の小物(palette で出す・出さないを決める)
+// ============================================================
+// 頭の上の小さな帽子・飾りを頭の座標(hcx, hcy, Rh。+x が顔の向き)で描く小さな道具
+function hatAt(ctx, dx, dy, rot, fn) {
+  const { g, hcx, hcy, Rh } = ctx;
+  g.save(); g.translate(hcx + dx * Rh, hcy + dy * Rh); g.rotate(rot || 0);
+  fn(g, Rh);
+  g.restore();
+}
+// 頭襟(ときん): 山伏の小さな黒い六角の帽子(ハヤテ「山伏」)
+function drawTokin(ctx, col) {
+  hatAt(ctx, 0.15, -0.95, -0.15, (g, R) => {
+    g.beginPath();
+    for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + (i / 6) * Math.PI * 2; g.lineTo(Math.cos(a) * R * 0.42, Math.sin(a) * R * 0.34 - R * 0.12); }
+    g.closePath(); g.fillStyle = ctx.K(col, 0); g.fill(); ctx.ol(1.8);
+    ctx.line([-R * 0.5, R * 0.18], [R * 0.6, R * 0.18], 1.6, '#111');
+  });
+}
+// 結袈裟(ゆいげさ): 胸の前の6つのぼんぼり(ハヤテ「山伏」)
+function drawKesa(ctx, col) {
+  const { P, hw } = ctx;
+  ctx.line(P(0.95, -hw * 0.2), P(0.25, hw * 0.95), 3, ctx.C('#f4f0e8'));
+  for (let i = 0; i < 3; i++) { const c = P(0.82 - i * 0.24, hw * (0.55 + i * 0.12)); ctx.dot(c[0], c[1], 4.4, '#111'); ctx.dot(c[0], c[1], 3.6, ctx.C(col)); }
+}
+// 羽団扇(はうちわ): 鳥の羽を重ねた扇(ハヤテ「山伏」)
+function drawFeatherFan(ctx, e, ux, uy, col, col2) {
+  const { g } = ctx, a0 = Math.atan2(uy, ux);
+  ctx.line(e, [e[0] + ux * 10, e[1] + uy * 10], 4, '#111');
+  ctx.line(e, [e[0] + ux * 10, e[1] + uy * 10], 2.6, ctx.C('#8a5a2a'));
+  for (let i = -3; i <= 3; i++) {
+    const a = a0 + i * 0.2, L = 26 - Math.abs(i) * 2, b = [e[0] + ux * 9, e[1] + uy * 9], t = [b[0] + Math.cos(a) * L, b[1] + Math.sin(a) * L], nx = -Math.sin(a), ny = Math.cos(a);
+    g.beginPath(); g.moveTo(...b);
+    g.quadraticCurveTo(b[0] + Math.cos(a) * L * 0.6 + nx * 5, b[1] + Math.sin(a) * L * 0.6 + ny * 5, ...t);
+    g.quadraticCurveTo(b[0] + Math.cos(a) * L * 0.6 - nx * 5, b[1] + Math.sin(a) * L * 0.6 - ny * 5, ...b);
+    g.fillStyle = ctx.K(i % 2 ? col2 : col, 0); g.fill(); ctx.ol(1.2);
+  }
+}
+// 風袋(かざぶくろ): 頭の後ろに大きな輪になってなびく布(ハヤテ「風神」)
+function drawWindBag(ctx, col) {
+  const { g, P, hw } = ctx, c = P(1.25, -hw * 0.4), t = (typeof fr !== 'undefined' ? fr : 0) * 0.05;
+  g.save(); g.translate(c[0], c[1]); g.rotate(Math.atan2(ctx.ls || 0, ctx.lc ?? 1));
+  g.beginPath(); g.ellipse(-6, -4, 34 + Math.sin(t) * 2, 22, -0.2, 0, 7);
+  g.lineWidth = 10 + 2.6 * olScale(); g.strokeStyle = '#111'; g.stroke();
+  g.lineWidth = 10; g.strokeStyle = ctx.K(col, 0); g.stroke();
+  g.lineWidth = 2; g.strokeStyle = ctx.K(col, 0.35);
+  g.beginPath(); g.ellipse(-6, -4, 34 + Math.sin(t) * 2, 22, -0.2, 3.6, 5.6); g.stroke();
+  g.restore();
+}
+// 氷の騎士の兜(額当てと結晶の羽飾り)(セツカ「氷の騎士」)
+function drawIceHelm(ctx, col, gem) {
+  hatAt(ctx, 0.05, -0.55, 0, (g, R) => {
+    g.beginPath(); g.arc(0, R * 0.45, R * 1.08, Math.PI * 1.08, Math.PI * 1.95); g.lineTo(R * 1.05, R * 0.15); g.lineTo(-R * 1.0, R * 0.25); g.closePath();
+    g.fillStyle = ctx.LG(-R, -R, R, R, ctx.K(col, 0.2), ctx.K(col, -0.15)); g.fill(); ctx.ol(2);
+    ctx.poly([[-R * 0.2, -R * 0.55], [-R * 0.55, -R * 1.5], [R * 0.05, -R * 0.75]]);    // 結晶の羽飾り
+    g.fillStyle = ctx.C(gem); g.fill(); ctx.ol(1.4);
+    ctx.dot(R * 0.75, R * 0.05, 2.4, ctx.C(gem));
+  });
+}
+// かんざし(氷の飾りを挿す)(セツカ「雪の巫女」)
+function drawKanzashi(ctx, col) {
+  hatAt(ctx, -0.55, -0.55, -0.6, (g, R) => {
+    ctx.line([0, 0], [R * 1.1, 0], 2.4, '#111'); ctx.line([0, 0], [R * 1.1, 0], 1.4, ctx.C('#f0e8d8'));
+    for (let i = 0; i < 3; i++) { ctx.poly([[-2 + i * 4, 0], [i * 4, R * (0.5 + i * 0.12)], [2 + i * 4, 0]]); g.fillStyle = ctx.C(col); g.fill(); ctx.ol(1); }
+    ctx.dot(0, 0, 3.4, ctx.C(col));
+  });
+}
+// どんぐりの帽子(シゲル「どんぐり探検家」)
+function drawAcornCap(ctx, col) {
+  hatAt(ctx, 0, -0.7, -0.1, (g, R) => {
+    g.beginPath(); g.ellipse(0, 0, R * 1.12, R * 0.62, 0, Math.PI, 0); g.closePath();
+    g.fillStyle = ctx.K(col, 0); g.fill(); ctx.ol(2);
+    g.lineWidth = 1; g.strokeStyle = 'rgba(40,20,0,.45)';
+    for (let i = -2; i <= 2; i++) { g.beginPath(); g.moveTo(i * R * 0.38 - R * 0.2, -R * 0.05); g.lineTo(i * R * 0.38 + R * 0.2, -R * 0.45); g.stroke(); }
+    ctx.line([0, -R * 0.6], [R * 0.15, -R * 0.9], 3, '#111'); ctx.line([0, -R * 0.6], [R * 0.15, -R * 0.9], 1.8, ctx.C('#6a4a2a'));
+  });
+}
+// 花の冠(シゲル「花の妖精」)
+function drawFlowerWreath(ctx, cols) {
+  for (let i = 0; i < 5; i++) {
+    const a = Math.PI * (1.05 + i * 0.2);
+    hatAt(ctx, Math.cos(a) * 0.92, Math.sin(a) * 0.82 - 0.05, 0, (g, R) => {
+      for (let k = 0; k < 5; k++) { const b = (k / 5) * Math.PI * 2; ctx.dot(Math.cos(b) * 3, Math.sin(b) * 3, 2.6, ctx.C(cols[i % cols.length])); }
+      ctx.dot(0, 0, 1.8, ctx.C('#fff3a0'));
+    });
+  }
+}
+// きのこの傘の帽子(シゲル「森の番人」)
+function drawMushroomCap(ctx, col, dots) {
+  hatAt(ctx, 0, -0.62, -0.12, (g, R) => {
+    g.beginPath(); g.moveTo(-R * 1.45, R * 0.15); g.quadraticCurveTo(-R * 1.2, -R * 1.25, 0, -R * 1.3); g.quadraticCurveTo(R * 1.2, -R * 1.25, R * 1.45, R * 0.15);
+    g.quadraticCurveTo(0, -R * 0.15, -R * 1.45, R * 0.15); g.closePath();
+    g.fillStyle = ctx.LG(0, -R * 1.3, 0, R * 0.2, ctx.K(col, 0.15), ctx.K(col, -0.15)); g.fill(); ctx.ol(2);
+    for (const [x, y, r] of [[-0.6, -0.65, 0.2], [0.3, -0.9, 0.16], [0.75, -0.35, 0.14], [-0.15, -0.35, 0.12]]) ctx.dot(x * R, y * R, r * R, ctx.C(dots));
+  });
+}
+// 背負いかばん(シゲル「どんぐり探検家」)
+function drawBackpack(ctx, col) {
+  const { g, P, hw } = ctx, c = P(0.55, -hw * 1.15);
+  g.save(); g.translate(c[0], c[1]); g.rotate(Math.atan2(ctx.ls || 0, ctx.lc ?? 1));
+  g.beginPath(); if (g.roundRect) g.roundRect(-8, -16, 14, 30, 4); else g.rect(-8, -16, 14, 30);
+  g.fillStyle = ctx.K(col, 0); g.fill(); ctx.ol(2);
+  ctx.line([-8, -4], [6, -4], 1.4, ctx.K(col, -0.3)); ctx.dot(-1, 2, 1.8, ctx.C('#e8d070'));
+  g.restore();
+}
+// 大きな肩当て(ギア「重装型」)
+function drawPauldron(ctx, shN, col, trim) {
+  const { g } = ctx;
+  g.beginPath(); g.ellipse(shN[0], shN[1] - 2, 17, 13, -0.2, Math.PI * 1.02, Math.PI * 2.1); g.closePath();
+  g.fillStyle = ctx.LG(shN[0] - 15, shN[1] - 14, shN[0] + 15, shN[1] + 4, ctx.K(col, 0.2), ctx.K(col, -0.2)); g.fill(); ctx.ol(2.4);
+  ctx.line([shN[0] - 14, shN[1] + 1], [shN[0] + 15, shN[1] - 3], 2.4, ctx.C(trim));
+  for (const dx of [-8, 0, 8]) ctx.dot(shN[0] + dx, shN[1] - 8, 1.6, '#2a3038');
+}
+// 道化の帽子(先が2つに分かれ、鈴がつく)(カルタ「ジョーカー」)
+function drawJesterHat(ctx, c1, c2) {
+  const p = ctx.p, sw = Math.sin((typeof fr !== 'undefined' ? fr : 0) * 0.12 + (p && p.vx ? p.vx * 0.2 : 0)) * 0.15;
+  hatAt(ctx, -0.05, -0.75, 0, (g, R) => {
+    for (const [s, col] of [[-1, c1], [1, c2]]) {
+      g.beginPath(); g.moveTo(-R * 0.75 * (s < 0 ? 1 : 0), 0); g.lineTo(R * 0.75 * (s > 0 ? 1 : 0), 0);
+      const tx = s * R * 1.45 + sw * R, ty = -R * 0.6 + R * 0.55;
+      g.quadraticCurveTo(s * R * 1.0, -R * 1.5, tx, ty); g.quadraticCurveTo(s * R * 0.5, -R * 0.9, 0, 0); g.closePath();
+      g.fillStyle = ctx.K(col, 0); g.fill(); ctx.ol(1.8);
+      ctx.dot(tx, ty + 2, 3.4, '#111'); ctx.dot(tx, ty + 2, 2.6, ctx.C('#ffd84a'));
+    }
+    g.beginPath(); g.ellipse(0, 0, R * 0.95, R * 0.24, 0, 0, 7); g.fillStyle = ctx.C('#f4f0e8'); g.fill(); ctx.ol(1.4);
+  });
+}
+// カジノのひさし(緑の半透明のつば)(カルタ「カジノディーラー」)
+function drawEyeshade(ctx, col) {
+  hatAt(ctx, 0.15, -0.55, -0.05, (g, R) => {
+    ctx.line([-R * 0.95, 0], [R * 0.3, -R * 0.1], 3, '#111');
+    g.beginPath(); g.moveTo(R * 0.1, -R * 0.12); g.lineTo(R * 1.55, R * 0.1); g.lineTo(R * 0.15, R * 0.2); g.closePath();
+    g.globalAlpha = 0.85; g.fillStyle = ctx.C(col); g.fill(); g.globalAlpha = 1; ctx.ol(1.4);
+  });
+}
+// 占い師のヴェール付きの頭巾(額に金貨の飾り)(カルタ「タロット占い師」)
+function drawFortuneHood(ctx, col, gold) {
+  hatAt(ctx, -0.1, -0.35, 0, (g, R) => {
+    g.beginPath(); g.moveTo(-R * 1.25, R * 0.9); g.quadraticCurveTo(-R * 1.35, -R * 1.2, R * 0.2, -R * 1.0); g.quadraticCurveTo(R * 0.85, -R * 0.75, R * 0.95, -R * 0.15);
+    g.lineTo(R * 0.55, -R * 0.2); g.quadraticCurveTo(-R * 0.2, -R * 0.65, -R * 0.75, R * 0.9); g.closePath();
+    g.fillStyle = ctx.K(col, 0); g.fill(); ctx.ol(2);
+    for (let i = 0; i < 5; i++) { const x = -R * 0.35 + i * R * 0.25, y = -R * 0.55 + i * R * 0.08; ctx.dot(x, y, 2.6, '#111'); ctx.dot(x, y, 2, ctx.C(gold)); }
+  });
+}
+
 const CHARACTER_DRAWS = {
   'ライキ': {
     body: {
@@ -1592,10 +1737,12 @@ const CHARACTER_DRAWS = {
 
     // 胸: 羽織の合わせ目の白い紐
     torso(ctx) {
-      const { P, hw } = ctx, c = PAL(ctx, 'cord', '#eef8f2');
-      ctx.line(P(0.55, hw * 0.75), P(0.5, hw * 1.0), 2, ctx.C(c));
-      ctx.dot(...P(0.5, hw * 1.0), 2.2, ctx.C(c));
+      const { P, hw } = ctx, c = PAL(ctx, 'cord', '#eef8f2'), ks = PAL(ctx, 'kesa', null);
+      if (c) { ctx.line(P(0.55, hw * 0.75), P(0.5, hw * 1.0), 2, ctx.C(c)); ctx.dot(...P(0.5, hw * 1.0), 2.2, ctx.C(c)); }
+      if (ks) drawKesa(ctx, ks);                                            // 山伏の結袈裟(スキン)
     },
+    back(ctx) { const wb = PAL(ctx, 'windbag', null); if (wb) drawWindBag(ctx, wb); },   // 風神の風袋(スキン)
+    headFront(ctx) { const tk = PAL(ctx, 'tokin', null); if (tk) drawTokin(ctx, tk); },  // 山伏の頭襟(スキン)
     // 腰の帯: 長い2本の垂れが風になびく
     waist(ctx, b, tr, wv) {
       const col = PAL(ctx, 'sash', '#2f8a72');
@@ -1606,6 +1753,7 @@ const CHARACTER_DRAWS = {
     },
     // 鉄扇: こぶしを要(かなめ)に、技の方向へ半円に開く(疾風突き・空舞いの間は閉じて1本の棒)
     weapon(ctx, e, ux, uy) {
+      if (PAL(ctx, 'feather', null)) return drawFeatherFan(ctx, e, ux, uy, PAL(ctx, 'feather', '#fff'), PAL(ctx, 'feather2', '#ddd'));   // 羽団扇(スキン)
       const { g } = ctx, p = ctx.p, closed = p && p.st === 'atk' && p.mv && /^(da|c2)$/.test(p.mv.k);
       const fan = PAL(ctx, 'fan', '#4fbfa0'), fan2 = PAL(ctx, 'fan2', '#eefff8'), rib = PAL(ctx, 'rib', '#3a2a1a');
       const a0 = Math.atan2(uy, ux), R = 30, span = closed ? 0.12 : 1.55;
@@ -1697,7 +1845,13 @@ const CHARACTER_DRAWS = {
 
     // 胸: 氷の結晶の留め具と、白い毛皮の襟
     torso(ctx) {
-      const { P, hw, g } = ctx, cl = PAL(ctx, 'clasp', '#5ad8ff');
+      const { P, hw, g } = ctx, cl = PAL(ctx, 'clasp', '#5ad8ff'), ob = PAL(ctx, 'obi', null);
+      if (ob) {                                                             // 雪の巫女の帯(スキン)
+        ctx.poly([P(0.02, hw * 1.0), P(0.3, hw * 1.02), P(0.3, -hw * 0.9), P(0.02, -hw * 0.9)]);
+        g.fillStyle = ctx.K(ob, 0); g.fill(); ctx.ol(1.4);
+        ctx.line(P(0.16, -hw * 0.9), P(0.16, hw * 1.0), 1.4, ctx.C(PAL(ctx, 'obiCord', '#ffffff')));
+        return;
+      }
       ctx.line(P(0.1, hw * 0.98), P(0.85, hw * 0.98), 1.6, ctx.C(PAL(ctx, 'coatLine', '#9cc8f0')));
       const c = P(0.7, hw * 0.85);
       g.fillStyle = ctx.C(cl);
@@ -1706,7 +1860,12 @@ const CHARACTER_DRAWS = {
       g.closePath(); g.fill(); ctx.ol(1.1);
       ctx.dot(c[0] - 1, c[1] - 1, 1, '#fff');
     },
-    extraCollar(ctx) { furCollar(ctx, PAL(ctx, 'fur', '#f6faff')); },
+    extraCollar(ctx) { const f = PAL(ctx, 'fur', '#f6faff'); if (f) furCollar(ctx, f); },
+    headFront(ctx) {                                                        // 氷の騎士の兜 / 雪の巫女のかんざし(スキン)
+      const hm = PAL(ctx, 'helm', null), kz = PAL(ctx, 'kanzashi', null);
+      if (hm) drawIceHelm(ctx, hm, PAL(ctx, 'clasp', '#5ad8ff'));
+      if (kz) drawKanzashi(ctx, kz);
+    },
     // 氷の槍: 白い柄・結晶のつば・透きとおった長い穂先
     weapon(ctx, e, ux, uy) {
       const { g } = ctx, px = -uy, py = ux, A = (d, s = 0) => [e[0] + ux * d + px * s, e[1] + uy * d + py * s];
@@ -1778,7 +1937,10 @@ const CHARACTER_DRAWS = {
 
     // 頭の上の双葉(芽)。動くと揺れる
     headFront(ctx) {
-      const { g, hcx, hcy, Rh } = ctx, c1 = PAL(ctx, 'sprout', '#7ad04a'), c2 = PAL(ctx, 'sprout2', '#4a9a2a'), fl = PAL(ctx, 'flower', null);
+      const { g, hcx, hcy, Rh } = ctx, c1 = PAL(ctx, 'sprout', '#7ad04a'), c2 = PAL(ctx, 'sprout2', '#4a9a2a'), fl = PAL(ctx, 'flower', null), hat = PAL(ctx, 'hat', null);
+      if (hat === 'acorn') return drawAcornCap(ctx, PAL(ctx, 'hatColor', '#8a5a2a'));                 // スキンの帽子(芽は帽子の中)
+      if (hat === 'mushroom') return drawMushroomCap(ctx, PAL(ctx, 'hatColor', '#c83a2a'), PAL(ctx, 'hatDots', '#fff6e8'));
+      if (hat === 'wreath') drawFlowerWreath(ctx, PAL(ctx, 'wreath', ['#ff8ac0', '#fff', '#ffd84a']));
       const J = ctx.jiggle ? ctx.jiggle('sprout', [hcx, hcy - Rh], { k: 0.2, damp: 0.2, max: 7 }) : [0, 0];
       const b = [hcx - Rh * 0.1, hcy - Rh * 0.92], t = [b[0] + J[0] * 0.6, b[1] - 9 + J[1] * 0.4];
       ctx.line(b, t, 3.4, '#111');
@@ -1793,7 +1955,8 @@ const CHARACTER_DRAWS = {
     },
     // 背中の葉のマント(葉を3段に重ねる)
     back(ctx) {
-      const { P, hw, g } = ctx, c1 = PAL(ctx, 'cape', '#5ab83a'), c2 = PAL(ctx, 'cape2', '#3a8a2a');
+      const { P, hw, g } = ctx, c1 = PAL(ctx, 'cape', '#5ab83a'), c2 = PAL(ctx, 'cape2', '#3a8a2a'), pk = PAL(ctx, 'pack', null);
+      if (pk) drawBackpack(ctx, pk);                                        // 背負いかばん(スキン)
       if (!c1) return;
       for (let row = 0; row < 3; row++) for (let i = 0; i < 3; i++) {
         const c = P(0.95 - row * 0.3, -hw * (0.6 + i * 0.25)), s = 9 - row;
@@ -1869,7 +2032,21 @@ const CHARACTER_DRAWS = {
       ctx.dot(hcx - Rh * 0.25 * cs, hcy + Rh * 0.05, Rh * 0.34, ctx.K(h2, 0));
       ctx.dot(hcx - Rh * 0.25 * cs, hcy + Rh * 0.05, Rh * 0.14, ctx.C(st));
       // バイザー(顔の前側。光る)
-      const vx = hcx + Rh * (0.05 + 0.3 * cs), vy = hcy - Rh * 0.2;
+      const vx = hcx + Rh * (0.05 + 0.3 * cs), vy = hcy - Rh * 0.2, mono = PAL(ctx, 'mono', false), crest = PAL(ctx, 'crest', null);
+      if (crest) {                                                          // 兜の前立て(V字の金の飾り。スキン)
+        const b0 = [hcx + Rh * 0.35, hcy - Rh * 0.85];
+        for (const [dx, dy] of [[-0.9, -1.0], [0.6, -1.1]]) { ctx.line(b0, [b0[0] + dx * Rh, b0[1] + dy * Rh], 4.4, '#111'); ctx.line(b0, [b0[0] + dx * Rh, b0[1] + dy * Rh], 2.8, ctx.C(crest)); }
+        ctx.dot(b0[0], b0[1], 3.4, ctx.C(crest));
+      }
+      if (mono) {                                                           // 丸い1つ目(スキン)
+        const ex = hcx + Rh * (0.35 + 0.25 * cs), ey = hcy - Rh * 0.1, hot2 = p && p.oh > 0;
+        ctx.dot(ex, ey, Rh * 0.42, '#111'); ctx.dot(ex, ey, Rh * 0.34, '#10161c');
+        g.globalCompositeOperation = 'lighter';
+        g.fillStyle = ctx.RG(ex, ey, 0.5, Rh * 0.45, hot2 ? '#ff5a3a' : vi, 'rgba(0,0,0,0)'); g.beginPath(); g.arc(ex, ey, Rh * 0.45, 0, 7); g.fill();
+        g.globalCompositeOperation = 'source-over';
+        ctx.dot(ex, ey, Rh * 0.16, ctx.C(hot2 ? '#ff5a3a' : vi)); ctx.dot(ex - 1.5, ey - 1.5, 1.2, '#fff');
+        return true;
+      }
       g.beginPath();
       if (g.roundRect) g.roundRect(vx - Rh * 0.35, vy - Rh * 0.22, Rh * 1.32, Rh * 0.48, Rh * 0.2); else g.rect(vx - Rh * 0.35, vy - Rh * 0.22, Rh * 1.32, Rh * 0.48);
       g.fillStyle = '#10161c';
@@ -1888,6 +2065,7 @@ const CHARACTER_DRAWS = {
       for (let i = 0; i < 3; i++) ctx.line([hcx + Rh * (0.35 + i * 0.18), hcy + Rh * 0.5], [hcx + Rh * (0.35 + i * 0.18), hcy + Rh * 0.78], 1.2, '#2a3038');
       return true;
     },
+    shoulder(ctx, shN) { const pd = PAL(ctx, 'pauldron', null); if (pd) drawPauldron(ctx, shN, pd, PAL(ctx, 'stripe', '#e03a3a')); },   // 大きな肩当て(スキン)
     // 胸の炉心(熱がたまるほど橙→赤に。オーバーヒート中は点滅)
     torso(ctx) {
       const { P, hw, g } = ctx, p = ctx.p, H = p && p.ch && p.ch.ht, r = H ? Math.min(1, (p.heat || 0) / H.max) : 0;
@@ -1993,10 +2171,13 @@ const CHARACTER_DRAWS = {
         g.fillStyle = ctx.C(bw); g.fill(); ctx.ol(1);
       }
       ctx.dot(c[0], c[1], 2, ctx.C(ctx.K(bw, -0.3)));
+      const rf = PAL(ctx, 'ruff', null);                                   // 道化のひだ襟(スキン)
+      if (rf) for (let i = 0; i < 6; i++) { const a = P(0.98, hw * (1.05 - i * 0.38)); ctx.dot(a[0], a[1], 4.4, '#111'); ctx.dot(a[0], a[1], 3.6, ctx.C(i % 2 ? rf : '#ffffff')); }
     },
     // 燕尾(ジャケットの後ろの2本の長いすそ)
     waist(ctx, b, tr, wv) {
       const col = PAL(ctx, 'tails', '#1e1a2a');
+      if (!col) return;
       [[-12, 30, 0], [-6, 34, -0.15]].forEach(([dx, dy, dim], k) => {
         const pts = ctx.strand('ktail' + k, [b[0] - 4, b[1] - 6], { len: Math.hypot(dx, dy), n: 4, dir: [dx, dy], stiff: [0.45, 0.05], damp: 0.08, flutter: 0.7, seed: k * 1.3, collide: 'back', r: 2 });
         strandRibbon(ctx, pts, 7, 5, ctx.K(col, dim), true);
@@ -2004,7 +2185,10 @@ const CHARACTER_DRAWS = {
     },
     // シルクハット(赤い帯にトランプを1枚差す)。頭の動きに合わせて少し傾く
     headFront(ctx) {
-      const { g, hcx, hcy, Rh } = ctx, hat = PAL(ctx, 'hat', '#1a1622'), band = PAL(ctx, 'hatBand', '#e0304a');
+      const { g, hcx, hcy, Rh } = ctx, hat = PAL(ctx, 'hat', '#1a1622'), band = PAL(ctx, 'hatBand', '#e0304a'), ht = PAL(ctx, 'hatType', 'top');
+      if (ht === 'jester') return drawJesterHat(ctx, hat, band);           // スキンの帽子
+      if (ht === 'shade') return drawEyeshade(ctx, hat);
+      if (ht === 'hood') return drawFortuneHood(ctx, hat, band);
       if (!hat) return;
       const cx = hcx - Rh * 0.05, by = hcy - Rh * 0.78, tilt = -0.12;
       g.save(); g.translate(cx, by); g.rotate(tilt);
@@ -2322,130 +2506,123 @@ const CHARACTER_SKINS = {
           { type: 'skirt', color: '#1c2448', trim: '#bfe4ff', length: 0.42, flare: 13, waist: 0.2 },
           { type: 'skirt', color: '#2a3a70', trim: '#ffd84a', length: 0.22, flare: 9, waist: 0.2 }] } },
   ],
-  // ハヤテ  palette: fan / fan2 / rib(鉄扇) / sash(腰の帯) / cord(胸の紐)
+  // ---- 新しい5人のスキン(髪の色は変えない。衣装・小物そのものを着がえる) ----
+  // ハヤテ  palette: fan / fan2 / rib(鉄扇) / sash(腰の帯) / cord(胸の紐。null で無し) /
+  //         feather / feather2(羽団扇にする) / kesa(結袈裟のぼんぼり) / tokin(頭襟) / windbag(風神の風袋)
   'ハヤテ': [
-    // 嵐の旅人: 紺の羽織・灰色の袴・黒い扇・灰色のマフラー
-    { name: '嵐の旅人', color: '#2a3a5a', pj: '#c8d8ff',
-      palette: { fan: '#2a2a3a', fan2: '#9ab0d8', rib: '#111', sash: '#4a5a7a', cord: '#c8d8ff' },
+    // 山伏: 白い鈴懸(すずかけ)の道着と袴・黒い頭襟・山吹のぼんぼりの結袈裟・羽団扇
+    { name: '山伏', color: '#f4f0e8', pj: '#ffe0a0',
+      palette: { tokin: '#1a1a22', kesa: '#e8a030', cord: null, feather: '#f4f0e8', feather2: '#3a3a40', sash: '#e8a030' },
       draw: {
-        body: { pantsColor: '#6a7080', beltColor: '#4a5a7a', top: { type: 'vest', color: '#2a3a5a', inner: '#d8dce8', buttons: 0 }, bottom: { type: 'wide', color: '#6a7080', flare: 1.7 }, shoesColor: '#2a2a30' },
-        hair: [{ ...CD('ハヤテ').hair[0], color: '#2a2a40', tie: '#c8d8ff' }, { ...CD('ハヤテ').hair[1], color: '#2a2a40' }],
-        clothes: [{ type: 'scarf', color: '#8a92a8', color2: '#6a7088', length: 54, flutter: 1.6 }],
-        faceDeco: [{ type: 'scar', from: [0.5, -0.55], to: [0.72, -0.2], w: 1.8, color: '#a05a4a' }] } },
-    // 紅葉風: 赤と橙の羽織・山吹の扇・もみじ色の髪
-    { name: '紅葉風', color: '#c84a2a', pj: '#ffb070',
-      palette: { fan: '#ffb030', fan2: '#fff0c0', rib: '#5a2a1a', sash: '#e85a2a', cord: '#ffe0a0' },
+        body: { top: { type: 'gi', color: '#f4f0e8', trim: '#e8a030' }, bottom: { type: 'wide', color: '#e8e4d8', flare: 1.9 }, beltColor: '#e8a030', shoesColor: '#6a4a2a', lowerArm: { wrap: false } },
+        clothes: [] } },
+    // 街の疾風: フードのパーカー・カーゴパンツ・ゴーグル・スニーカー・黒とオレンジの扇
+    { name: '街の疾風', color: '#3a6a5a', pj: '#ffb070',
+      palette: { cord: null, fan: '#2a2a30', fan2: '#ff8a4a', rib: '#111', sash: '#ff6a3a' },
       draw: {
-        body: { pantsColor: '#f0e0c0', beltColor: '#e85a2a', top: { type: 'vest', color: '#c84a2a', inner: '#fff4e0', buttons: 0 }, bottom: { type: 'wide', color: '#5a3a2a', flare: 1.7 }, shoesColor: '#3a2010' },
-        hair: [{ ...CD('ハヤテ').hair[0], color: '#a8401a', tie: '#ffd040' }, { ...CD('ハヤテ').hair[1], color: '#a8401a' }],
-        clothes: [{ type: 'scarf', color: '#ffd040', color2: '#e89020', length: 54, flutter: 1.6 }],
-        faceDeco: [{ type: 'line', from: [0.42, 0.18], to: [0.62, 0.3], w: 1.6, color: '#e85a2a' }] } },
-    // 天狗: 黒い羽織・赤い袴・山伏の頭襟(赤い小さな帽子)・羽団扇の色
-    { name: '天狗', color: '#1a1a22', pj: '#ff6a5a',
-      palette: { fan: '#f4f0e8', fan2: '#ffffff', rib: '#8a1a1a', sash: '#c81e1e', cord: '#ffffff' },
+        body: { top: { type: 'hoodie', color: '#3a6a5a', strings: '#ffffff', pocket: true }, bottom: { type: 'cargo', color: '#4a4a52' }, beltColor: '#ff6a3a', shoesColor: '#e8e8e8', lowerArm: { wrap: false } },
+        headgear: [{ type: 'goggles', strap: '#2a2a30', frame: '#ff6a3a', lens: '#8cf', y: -0.62 }],
+        clothes: [] } },
+    // 風神: 上半身は裸に金の腕輪、頭の角、背中に大きくなびく風袋、青い袴と腰布
+    { name: '風神', color: '#3a7aa8', pj: '#c8f0ff',
+      palette: { windbag: '#e8f8ff', cord: null, sash: '#e8c050', fan: '#e8c050', fan2: '#fff6d8', rib: '#5a3a1a' },
       draw: {
-        body: { pantsColor: '#c81e1e', beltColor: '#c81e1e', top: { type: 'vest', color: '#1a1a22', inner: '#f4f0e8', buttons: 0 }, bottom: { type: 'wide', color: '#c81e1e', flare: 1.8 }, shoesColor: '#5a3a1a' },
-        hair: [{ ...CD('ハヤテ').hair[0], color: '#e8e8f0', tie: '#c81e1e' }, { ...CD('ハヤテ').hair[1], color: '#e8e8f0' }],
-        headgear: [{ type: 'crown', color: '#1a1a22', width: 0.4, height: 0.55, gem: '#c81e1e' }],
-        clothes: [{ type: 'scarf', color: '#f4f0e8', color2: '#d8d0c0', length: 54, flutter: 1.6 }],
-        eyes: { ...CD('ハヤテ').eyes, type: 'red' } } },
+        body: { top: { type: 'none' }, bottom: { type: 'baggy', color: '#3a7aa8' }, beltColor: '#e8c050', armBand: '#e8c050', shoesColor: '#3a2a1a', lowerArm: { wrap: false } },
+        headgear: [{ type: 'horn', x: -0.1, y: -0.8, side: -1, layer: 'back' }, { type: 'horn', x: 0.2, y: -0.85, side: 1, layer: 'front' }],
+        clothes: [{ type: 'loincloth', color: '#e8c050', trim: '#3a7aa8', length: 0.32 }] } },
   ],
-  // セツカ  palette: fur(毛皮の襟) / clasp(結晶の留め具) / coatLine / shaft / blade / blade2(槍)
+  // セツカ  palette: fur(毛皮の襟。null で無し) / clasp(結晶の留め具) / coatLine / shaft / blade / blade2(槍) /
+  //         helm(氷の兜) / kanzashi(かんざし) / obi / obiCord(帯)
   'セツカ': [
-    // 氷の女王: 濃い青の外套・銀の縁・大きなティアラ
-    { name: '氷の女王', color: '#2a4a8a', pj: '#7ac8ff',
-      palette: { fur: '#e8f0ff', clasp: '#c8e8ff', coatLine: '#c8d8f0', shaft: '#c8d0e0', blade: '#5ab0ff', blade2: '#e8f8ff' },
+    // 氷の騎士: 氷の鎧とすね当て・結晶の羽飾りの兜・短いマント
+    { name: '氷の騎士', color: '#5a7aa8', pj: '#bfe8ff',
+      palette: { helm: '#dff2ff', fur: null, clasp: '#5ab8ff', coatLine: null, shaft: '#8aa8c8', blade: '#bfe8ff', blade2: '#ffffff' },
       draw: {
-        body: { pantsColor: '#1a2a5a', shoesColor: '#1a2a5a', beltColor: '#c8d0e0', foreArmColor: '#2a4a8a' },
-        headgear: [{ type: 'crown', color: '#e8f0ff', width: 0.85, height: 0.9, gem: '#2a6ad8' }],
-        clothes: [{ type: 'robe', color: '#2a4a8a', trim: '#c8d0e0', length: 0.9, flare: 14 }, { type: 'cape', color: '#1a2a5a', trim: '#c8d0e0', clasp: '#7ac8ff', length: 0.85, flare: 12 }] } },
-    // 桜氷: 薄桃の外套・桜色の髪・桃色に透ける氷
-    { name: '桜氷', color: '#ffd8e8', pj: '#ffb0d0',
-      palette: { fur: '#fff4f8', clasp: '#ff8ab8', coatLine: '#ffb0cc', shaft: '#fff0f6', blade: '#ffb0d8', blade2: '#ffffff' },
+        body: { top: { type: 'armor', color: '#3a5a88', plate: '#dff2ff', rivet: '#5ab8ff' }, bottom: { type: 'greaves', color: '#3a5a88', greave: '#dff2ff' }, shoesColor: '#dff2ff', foreArmColor: '#dff2ff', handColor: '#dff2ff', beltColor: '#5ab8ff' },
+        headgear: [],
+        clothes: [{ type: 'cape', color: '#3a5a88', trim: '#dff2ff', clasp: '#5ab8ff', length: 0.7, flare: 10 }, { type: 'skirt', color: '#5a7aa8', trim: '#dff2ff', length: 0.3, flare: 8, waist: 0 }] } },
+    // 雪の巫女: 白い着物に水色の袴・帯・氷のかんざし・なぎなたのような槍
+    { name: '雪の巫女', color: '#ffffff', pj: '#e8f8ff',
+      palette: { obi: '#5ab8ff', obiCord: '#ffffff', fur: null, kanzashi: '#9fe6ff', shaft: '#5a3a3a', blade: '#e8f8ff', blade2: '#ffffff' },
       draw: {
-        body: { pantsColor: '#f8d0e0', shoesColor: '#e87aa8', beltColor: '#ff8ab8', foreArmColor: '#ffd8e8' },
-        hair: [{ ...CD('セツカ').hair[0], color: '#ffd0e4' }, { ...CD('セツカ').hair[1], color: '#ffd0e4' }],
-        headgear: [{ type: 'crown', color: '#ffc4dc', width: 0.75, height: 0.7, gem: '#ff5a9a' }],
-        eyes: { ...CD('セツカ').eyes, color: '#e04a8a' },
-        clothes: [{ type: 'robe', color: '#ffd8e8', trim: '#ff8ab8', length: 0.86, flare: 12 }] } },
-    // 夜霜: 黒い外套・紫の氷・黒い毛皮
-    { name: '夜霜', color: '#1e1a2a', pj: '#b08aff',
-      palette: { fur: '#3a344a', clasp: '#b08aff', coatLine: '#5a4a7a', shaft: '#2a2436', blade: '#b08aff', blade2: '#f0e8ff' },
+        body: { top: { type: 'gi', color: '#ffffff', trim: '#5ab8ff' }, bottom: { type: 'wide', color: '#bfe0ff', flare: 2.1 }, foreArmColor: '#ffffff', shoesColor: '#e8e8f0', beltColor: '#5ab8ff' },
+        headgear: [],
+        clothes: [] } },
+    // 冬の舞踏会: 何重にも広がるドレスと小さなティアラ
+    { name: '冬の舞踏会', color: '#e8f4ff', pj: '#cfe8ff',
+      palette: { fur: '#ffffff', clasp: '#9fd0ff', coatLine: null },
       draw: {
-        body: { pantsColor: '#141020', shoesColor: '#2a2040', beltColor: '#b08aff', foreArmColor: '#1e1a2a' },
-        hair: [{ ...CD('セツカ').hair[0], color: '#5a5470' }, { ...CD('セツカ').hair[1], color: '#5a5470' }],
-        headgear: [{ type: 'crown', color: '#8a6ad8', width: 0.75, height: 0.7, gem: '#e8d8ff' }],
-        eyes: { ...CD('セツカ').eyes, color: '#a05aff' },
-        clothes: [{ type: 'robe', color: '#1e1a2a', trim: '#b08aff', length: 0.86, flare: 12 }] } },
+        body: { foreArmColor: '#ffffff', handColor: '#ffffff', shoesColor: '#bfe0ff' },
+        headgear: [{ type: 'crown', color: '#e8f4ff', width: 0.55, height: 0.45, gem: '#9fd0ff' }],
+        clothes: [{ type: 'skirt', color: '#bfe0ff', length: 0.98, flare: 28, waist: 0.15 }, { type: 'skirt', color: '#e8f4ff', trim: '#9fd0ff', length: 0.78, flare: 22, waist: 0.15 }, { type: 'skirt', color: '#ffffff', trim: '#bfe0ff', length: 0.4, flare: 14, waist: 0.15 }] } },
   ],
-  // シゲル  palette: sprout / sprout2(頭の芽) / flower(芽の花。null で無し) / cape / cape2(背中の葉。cape: null で無し)
+  // シゲル  palette: sprout / sprout2(頭の芽) / flower(芽の花。null で無し) / cape / cape2(背中の葉。cape: null で無し) /
+  //         hat('acorn' どんぐり / 'mushroom' きのこ / 'wreath' 花の冠) / hatColor / hatDots / wreath(花の色の配列) / pack(背負いかばん)
   'シゲル': [
-    // 秋の実り: 橙のパーカー・紅葉のマント(髪の色はスキンで変えない)
-    { name: '秋の実り', color: '#e8862a', pj: '#ffb040',
-      palette: { sprout: '#e8a030', sprout2: '#8a5a2a', cape: '#e85a2a', cape2: '#c8862a', flower: null },
+    // どんぐり探検家: どんぐりの帽子・ベスト・半ズボン・背負いかばん
+    { name: 'どんぐり探検家', color: '#a8743a', pj: '#c8904a',
+      palette: { hat: 'acorn', hatColor: '#8a5a2a', pack: '#7a5a2a', cape: null },
       draw: {
-        body: { top: { type: 'hoodie', color: '#e8862a', strings: '#fff0c0', pocket: true }, bottom: { type: 'shorts', color: '#5a3a1a', hem: 0.62 }, shoesColor: '#3a2410',
-          lowerArm: { wrap: { color: '#a8601a', stripe: '#7a4010', from: 0.1, to: 0.9, count: 5 } } } } },
-    // 花咲き: 桃色の花が咲いた芽・若草のパーカー・花びらのマント
-    { name: '花咲き', color: '#9ae07a', pj: '#ff9ac8',
-      palette: { sprout: '#7ad04a', sprout2: '#4a9a2a', flower: '#ff7ab8', cape: '#ffb0d0', cape2: '#ff8ac0' },
+        body: { top: { type: 'vest', color: '#a8743a', inner: '#f0e8c8', buttons: 2, button: '#e8d070' }, bottom: { type: 'shorts', color: '#6a5a3a', hem: 0.6 }, shoesColor: '#5a3a1a', lowerArm: { wrap: false } } } },
+    // 花の妖精: 花の冠・袖なしの服・花びらの腰みの・花びらのマント
+    { name: '花の妖精', color: '#9ae07a', pj: '#ff9ac8',
+      palette: { hat: 'wreath', wreath: ['#ff8ac0', '#ffffff', '#ffd84a'], flower: '#ff7ab8', cape: '#ffb0d0', cape2: '#ff8ac0' },
       draw: {
-        body: { top: { type: 'hoodie', color: '#9ae07a', strings: '#ff9ac8', pocket: true }, bottom: { type: 'shorts', color: '#f0e0c0', hem: 0.62 }, shoesColor: '#e87aa8' },
+        body: { top: { type: 'tank', color: '#9ae07a' }, bottom: { type: 'shorts', color: '#f0e0c0', hem: 0.5 }, shoesColor: '#e87aa8' },
+        clothes: [{ type: 'loincloth', color: '#ffb0d0', trim: '#ff7ab8', length: 0.3 }],
         faceDeco: [{ type: 'blush', x: 0.4, y: 0.4, r: 0.18, color: '#ff9ab8' }] } },
-    // 深い森: 濃い緑のパーカー・茶色のきのこ色の芽・苔のマント
-    { name: '深い森', color: '#1e4a2a', pj: '#7ae0a0',
-      palette: { sprout: '#c8a07a', sprout2: '#6a4a2a', flower: '#e84a3a', cape: '#2a6a3a', cape2: '#1a4a2a' },
+    // 森の番人: 赤いきのこの帽子・茶色の上着・苔のマント
+    { name: '森の番人', color: '#6a4a2a', pj: '#e85a4a',
+      palette: { hat: 'mushroom', hatColor: '#c83a2a', hatDots: '#fff6e8', cape: null },
       draw: {
-        body: { top: { type: 'hoodie', color: '#1e4a2a', strings: '#c8a07a', pocket: true }, bottom: { type: 'shorts', color: '#3a2a1a', hem: 0.62 }, shoesColor: '#2a1a10',
-          lowerArm: { wrap: { color: '#1e5a2a', stripe: '#0e3a1a', from: 0.1, to: 0.9, count: 5 } } },
-        eyes: { ...CD('シゲル').eyes, color: '#e0a03a' } } },
+        body: { top: { type: 'jacket', color: '#6a4a2a', inner: '#3a6a2a' }, bottom: { type: 'pants', color: '#3a2a1a' }, shoesColor: '#2a1a10' },
+        clothes: [{ type: 'cape', color: '#2a5a2a', trim: '#5a8a3a', length: 0.75, flare: 10 }] } },
   ],
-  // ギア  palette: helm / helm2(頭の装甲) / visor(目) / core(胸の炉心) / stripe(赤い線) / pod(肩のポッド) / thruster(背中の噴射口)
+  // ギア  palette: helm / helm2(頭の装甲) / visor(目) / core(胸の炉心) / stripe(赤い線) / pod(背中のポッド。null で無し) / thruster(背中の噴射口) /
+  //       mono(true で丸い1つ目) / crest(兜の前立て) / pauldron(大きな肩当て)
   'ギア': [
-    // 試作機: 白と青の装甲
+    // 試作機: 白い装甲・丸い1つ目・ポッドなしの軽い形
     { name: '試作機', color: '#e8eef4', skin: '#c8d4e0', pj: '#9ad8ff',
-      palette: { helm: '#ffffff', helm2: '#b8c8d8', visor: '#5ab0ff', core: '#5ab0ff', stripe: '#2a6ad8', pod: '#d8e0e8', thruster: '#8a9aaa' },
+      palette: { helm: '#ffffff', helm2: '#b8c8d8', visor: '#5ab0ff', core: '#5ab0ff', stripe: '#2a6ad8', pod: null, thruster: '#8a9aaa', mono: true },
       draw: { body: { pantsColor: '#8a9aaa', handColor: '#b8c8d8', foreArmColor: '#e8eef4', top: { type: 'armor', color: '#b8c8d8', plate: '#ffffff', rivet: '#2a6ad8' }, bottom: { type: 'greaves', color: '#8a9aaa', greave: '#ffffff' },
         elbowGuard: { color: '#2a6ad8', r: 4 }, lowerArm: { band: { color: '#2a6ad8', from: 0.7, to: 0.8, pad: 1.4 } } } } },
-    // 重装型: 深緑の軍用の装甲・黄色い目
+    // 重装型: 大きな肩当て・深緑の軍用の装甲・黄色い目
     { name: '重装型', color: '#5a6a3a', skin: '#4a5a32', pj: '#ffd040',
-      palette: { helm: '#7a8a52', helm2: '#4a5a32', visor: '#ffd040', core: '#ffd040', stripe: '#ffd040', pod: '#6a7a42', thruster: '#3a4228' },
+      palette: { helm: '#7a8a52', helm2: '#4a5a32', visor: '#ffd040', core: '#ffd040', stripe: '#ffd040', pod: '#6a7a42', thruster: '#3a4228', pauldron: '#7a8a52' },
       draw: { body: { pantsColor: '#3a4228', handColor: '#4a5a32', foreArmColor: '#6a7a42', top: { type: 'armor', color: '#4a5a32', plate: '#7a8a52', rivet: '#ffd040' }, bottom: { type: 'greaves', color: '#3a4228', greave: '#6a7a42' },
         elbowGuard: { color: '#ffd040', r: 4 }, lowerArm: { band: { color: '#ffd040', from: 0.7, to: 0.8, pad: 1.4 } } } } },
-    // ブラックオプス: 黒と金・赤い目
-    { name: 'ブラックオプス', color: '#22242a', skin: '#2a2c32', pj: '#ff4a3a',
-      palette: { helm: '#3a3c44', helm2: '#1a1c22', visor: '#ff3a2a', core: '#ff3a2a', stripe: '#d8b040', pod: '#2a2c32', thruster: '#1a1c22' },
-      draw: { body: { pantsColor: '#14161a', handColor: '#2a2c32', foreArmColor: '#3a3c44', top: { type: 'armor', color: '#1a1c22', plate: '#3a3c44', rivet: '#d8b040' }, bottom: { type: 'greaves', color: '#14161a', greave: '#3a3c44' },
-        elbowGuard: { color: '#d8b040', r: 4 }, lowerArm: { band: { color: '#d8b040', from: 0.7, to: 0.8, pad: 1.4 } } } } },
+    // 鎧武者: 黒い兜に金の前立て・赤い草摺(くさずり)・大きな肩当て(袖)
+    { name: '鎧武者', color: '#2a2a30', skin: '#3a3a42', pj: '#ff5a3a',
+      palette: { helm: '#2a2a30', helm2: '#1a1a20', visor: '#ff3a2a', core: '#ff3a2a', stripe: '#c81e1e', pod: null, thruster: '#1a1a20', crest: '#e8c040', pauldron: '#8a1a1a' },
+      draw: { body: { pantsColor: '#1a1a20', handColor: '#2a2a30', foreArmColor: '#3a3a42', top: { type: 'armor', color: '#1a1a20', plate: '#8a1a1a', rivet: '#e8c040' }, bottom: { type: 'greaves', color: '#1a1a20', greave: '#8a1a1a' },
+        elbowGuard: { color: '#e8c040', r: 4 }, lowerArm: { band: { color: '#e8c040', from: 0.7, to: 0.8, pad: 1.4 } } },
+        clothes: [{ type: 'loincloth', color: '#8a1a1a', trim: '#e8c040', length: 0.42 }] } },
   ],
-  // カルタ  palette: hat / hatBand(シルクハット) / bow(蝶ネクタイ) / vest(ボタン) / tails(燕尾) / card(トランプの縁)
+  // カルタ  palette: hat / hatBand(帽子の色) / hatType('top' シルクハット / 'jester' 道化 / 'shade' カジノのひさし / 'hood' 占い師の頭巾) /
+  //         bow(蝶ネクタイ) / vest(ボタン) / tails(燕尾。null で無し) / card(トランプの縁) / ruff(道化のひだ襟)
   'カルタ': [
-    // ジョーカー: 紫と緑の道化の服・緑の髪
-    { name: 'ジョーカー', color: '#4a2a6a', pj: '#7aff7a',
-      palette: { hat: '#4a2a6a', hatBand: '#3ad04a', bow: '#3ad04a', vest: '#3ad04a', tails: '#4a2a6a', card: '#7a3ad0' },
+    // ジョーカー: 2つに分かれた道化の帽子(鈴つき)・ひだ襟・紫と緑の服
+    { name: 'ジョーカー', color: '#7a3ad0', pj: '#7aff7a',
+      palette: { hatType: 'jester', hat: '#7a3ad0', hatBand: '#3ad04a', ruff: '#3ad04a', tails: null, bow: '#3ad04a', vest: '#3ad04a', card: '#7a3ad0' },
       draw: {
-        body: { top: { type: 'jacket', color: '#4a2a6a', inner: '#e8ffe0' }, foreArmColor: '#4a2a6a', beltColor: '#3ad04a', bottom: { type: 'socks', sock: '#1a3a1a', top: 0.02, trim: '#3ad04a' } },
-        hair: [{ ...CD('カルタ').hair[0], color: '#2a9a3a' }, { ...CD('カルタ').hair[1], color: '#2a9a3a' }],
-        eyes: { ...CD('カルタ').eyes, color: '#b03ad0' },
-        faceDeco: [{ type: 'star', x: 0.3, y: 0.28, size: 0.5, color: '#3ad04a' }],
-        clothes: [{ type: 'skirt', color: '#4a2a6a', trim: '#3ad04a', length: 0.3, flare: 9, waist: 0.05 }] } },
-    // 白いディーラー: 白いスーツ・黒い帽子・銀髪
-    { name: '白いディーラー', color: '#f4f0e8', pj: '#ffd84a',
-      palette: { hat: '#f4f0e8', hatBand: '#1a1622', bow: '#1a1622', vest: '#1a1622', tails: '#f4f0e8', card: '#1a1622' },
+        body: { top: { type: 'plain', color: '#7a3ad0' }, foreArmColor: '#7a3ad0', handColor: '#ffffff', beltColor: '#3ad04a', bottom: { type: 'socks', sock: '#3ad04a', top: 0.02, trim: '#7a3ad0' } },
+        clothes: [{ type: 'skirt', color: '#3ad04a', trim: '#7a3ad0', length: 0.32, flare: 13, waist: 0.05 }] } },
+    // カジノディーラー: 緑のひさし・赤いベストと白いシャツ・黒いズボン・腕のガーター
+    { name: 'カジノディーラー', color: '#8a1a2a', pj: '#ffd84a',
+      palette: { hatType: 'shade', hat: '#3ad08a', tails: null, bow: '#1a1622', vest: '#ffd84a', card: '#1a6a3a' },
       draw: {
-        body: { top: { type: 'jacket', color: '#f4f0e8', inner: '#1a1622' }, foreArmColor: '#f4f0e8', beltColor: '#1a1622', handColor: '#1a1622', bottom: { type: 'socks', sock: '#f4f0e8', top: 0.02, trim: '#1a1622' }, shoesColor: '#f4f0e8' },
-        hair: [{ ...CD('カルタ').hair[0], color: '#d8d8e8' }, { ...CD('カルタ').hair[1], color: '#d8d8e8' }],
-        eyes: { ...CD('カルタ').eyes, color: '#3a6ad8' },
-        clothes: [{ type: 'skirt', color: '#f4f0e8', trim: '#1a1622', length: 0.3, flare: 9, waist: 0.05 }] } },
-    // ゴールドラッシュ: 金と黒・金髪
-    { name: 'ゴールドラッシュ', color: '#1a1622', pj: '#ffd84a',
-      palette: { hat: '#d8a020', hatBand: '#1a1622', bow: '#ffd84a', vest: '#ffd84a', tails: '#1a1622', card: '#d8a020' },
+        body: { top: { type: 'vest', color: '#8a1a2a', inner: '#ffffff', buttons: 3, button: '#ffd84a' }, bottom: { type: 'pants', color: '#1a1622' }, foreArmColor: '#ffffff', handColor: '#ffffff', beltColor: '#1a1622', armBand: '#e0304a', shoesColor: '#1a1622' },
+        clothes: [] } },
+    // タロット占い師: 金貨の飾りの頭巾・星の模様の長いローブ・金のタロットカード
+    { name: 'タロット占い師', color: '#4a2a6a', pj: '#e8c040',
+      palette: { hatType: 'hood', hat: '#4a2a6a', hatBand: '#e8c040', tails: null, bow: '#e8c040', vest: null, card: '#e8c040' },
       draw: {
-        body: { top: { type: 'jacket', color: '#1a1622', inner: '#ffd84a' }, beltColor: '#ffd84a', bottom: { type: 'socks', sock: '#1a1622', top: 0.02, trim: '#ffd84a' } },
-        hair: [{ ...CD('カルタ').hair[0], color: '#f0c040' }, { ...CD('カルタ').hair[1], color: '#f0c040' }],
-        clothes: [{ type: 'skirt', color: '#d8a020', trim: '#1a1622', length: 0.3, flare: 9, waist: 0.05 }] } },
+        body: { top: { type: 'plain', color: '#4a2a6a' }, foreArmColor: '#4a2a6a', beltColor: '#e8c040', shoesColor: '#2a1a3a', bottom: { type: 'socks', sock: '#2a1a3a', top: 0.02, trim: '#e8c040' } },
+        faceDeco: [{ type: 'dot', x: 0.15, y: -0.55, r: 2, color: '#e8c040' }],
+        clothes: [{ type: 'robe', color: '#4a2a6a', trim: '#e8c040', length: 0.88, flare: 12 }] } },
   ],
 };
+
 
 // 体の大きさ・形の項目(スキンでは変えない。当たり判定と同じにするため)
 const SKIN_LOCK = ['scale', 'headRadius', 'handRadius', 'torsoLength', 'torsoWidth', 'thighLength', 'shinLength', 'legWidth', 'thighWidth', 'shinWidth',
