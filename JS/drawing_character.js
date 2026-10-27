@@ -1725,12 +1725,12 @@ const CHARACTER_DRAWS = {
       { type: 'bangs', style: 'side', color: '#2f6f68', length: 0.45, sideburn: 0.55, partY: 0.2 },
     ],
     headgear: [],
-    faceDeco: [{ type: 'line', from: [0.42, 0.18], to: [0.62, 0.3], w: 1.6, color: '#2f9a80' }],   // 目の下の風のしるし
+    faceDeco: [],
     clothes: [{ type: 'scarf', color: '#f4fbf8', color2: '#cfeee2', length: 54, flutter: 1.6 }],
     nose: 'small',
-    eyes: { type: 'sharp', x: 0.6, y: -0.05, size: 1, width: 1.05, height: 0.9 },
-    brows: { type: 'straight', thickness: 2, color: '#1f4f48' },
-    mouth: { closed: 'smirk', open: 'oval', x: 0.6, y: 0.55, size: 0.85 },
+    eyes: { type: 'anime', color: '#2fa080', x: 0.62, y: 0.04, size: 0.9, width: 1.0, height: 0.62 },   // 切れ長の青緑の目
+    brows: { type: 'angry', thickness: 1.6, color: '#1f4f48' },
+    mouth: { closed: 'flat', open: 'oval', x: 0.6, y: 0.55, size: 0.75 },
     moveDust: { color: '#bff5e6', color2: '#ffffff', rate: 0.45, size: 0.8, life: 26, from: 0.3, to: 0.9, behind: 18 },
     weaponGrip: { angle: 80, aim: true },
     palette: { fan: '#4fbfa0', fan2: '#eefff8', rib: '#3a2a1a', sash: '#2f8a72' },
