@@ -1562,19 +1562,19 @@ const CHARACTER_DRAWS = {
   //   ロロ(人形)の見た目は puppet.js の drawLoloBody。色は下の palette(lolo など)
   'メイ＆ロロ': {
     body: {
-      // ---- 大きさ (px) ----
-      scale: 0.76,
-      headRadius: 13,
-      handRadius: 5.5,
-      torsoLength: 37,
-      torsoWidth: 11.5,
-      upperArm: { length: 23, width: 5.5 },
-      lowerArm: { length: 22, width: 5, band: { color: '#ffffff', from: 0.86, to: 0.96, pad: 1.2 } },   // 手首の白いフリル
-      thighLength: 33,
-      shinLength: 37,
-      legWidth: 8,
-      thighWidth: 7.5,
-      shinWidth: 5,
+      // ---- 大きさ (px) ----  子どもの体つき: 頭が大きく、胴と手足が短い(全体の大きさ scale を上げて、背の高さは前とほぼ同じ)
+      scale: 0.9,
+      headRadius: 14,
+      handRadius: 4.8,
+      torsoLength: 29,
+      torsoWidth: 10,
+      upperArm: { length: 19, width: 4.8 },
+      lowerArm: { length: 18, width: 4.4, band: { color: '#ffffff', from: 0.86, to: 0.96, pad: 1.1 } },   // 手首の白いフリル
+      thighLength: 24,
+      shinLength: 26,
+      legWidth: 7,
+      thighWidth: 6.6,
+      shinWidth: 4.6,
 
       // ---- 色 ----
       pantsColor: '#1a1420',   // 黒いタイツ
@@ -1600,7 +1600,7 @@ const CHARACTER_DRAWS = {
       belt: false,
     },
 
-    headShape: 'illustGirl',
+    headShape: 'animeGirl',   // 丸い頬・小さなあご(子どもの顔)
     hair: [
       { type: 'long', color: '#c8b4e8', length: 1.0, volume: 9, wave: 0.15, tip: 'point' },        // 薄紫の長い髪(腰まで)
       { type: 'jaggedBangs', color: '#c8b4e8', length: 0.5, count: 8, seed: 2, width: 0.2 },
@@ -1617,9 +1617,9 @@ const CHARACTER_DRAWS = {
       { type: 'skirt', color: '#2a1c30', trim: '#7a1a3a', length: 0.22, flare: 9, waist: 0.2 },  // 上に重ねた短いスカート(臙脂の縁)
     ],
     nose: 'girl',
-    eyes: { type: 'anime', color: '#b0206a', x: 0.6, y: 0.12, size: 1.15, width: 1, height: 0.85 },   // 赤紫の、少し伏せた目
+    eyes: { type: 'anime', color: '#b0206a', x: 0.58, y: 0.18, size: 1.35, width: 1, height: 0.95 },   // 赤紫の大きな目(顔の下の方に。子どもらしく)
     brows: false,
-    mouth: { closed: 'small', open: 'o', x: 0.6, y: 0.58, size: 0.75, width: 0.4, height: 1, lineWidth: 1, color: '#3a1020', openColor: '#5a1a2a' },   // 小さく閉じた口(感情を見せない)
+    mouth: { closed: 'small', open: 'o', x: 0.58, y: 0.62, size: 0.7, width: 0.35, height: 1, lineWidth: 1, color: '#3a1020', openColor: '#5a1a2a' },   // 小さく閉じた口(感情を見せない)
 
     // 呪いの粉: 動くと紫の小さな光が裾からこぼれる
     moveDust: { color: '#b070ff', color2: '#ffb3f0', rate: 0.35, size: 0.7, life: 30, from: 0.6, to: 1, behind: 8 },
