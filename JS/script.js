@@ -1113,7 +1113,10 @@ function step(p, i, o, S) {
       p.apFail = true;
       if (trShowText()) fx.push({ k: 'txt', text: '受け流し失敗', x: p.x, y: p.y - 130, t: 30, l: 30, c: '#f99', s: 15 });
     }
-    if (p.t > AP.startup + AP.active + AP.whiff) p.st = 'idle';
+    if (p.y >= GY && p.t > AP.startup + AP.active) {
+      // 受付の途中で着地していた: 受付が終わったら失敗の着地硬直
+      p.st = 'land'; p.t = 1; p.lg = AP.failLand; p.apFail = false; p.moveLock = 0;
+    } else if (p.t > AP.startup + AP.active + AP.whiff) p.st = 'idle';
   } else if (p.st === 'land') {
     if (++p.t > (p.lg || 9)) p.st = 'idle'; // 着地隙(技・ジャンプごとに p.lg を設定)
   } else if (p.st === 'jsq') {
@@ -1217,7 +1220,10 @@ function step(p, i, o, S) {
       let lag = 0;
       if (p.st === 'atk') lag = (p.mv.lg ?? (/^a/.test(p.mv.k) ? c.alg ?? 9 : 0)) + (p.rcExtra || 0); // 受け流されていたら着地隙も伸びる
       else if (p.st === 'idle') lag = c.lgl ?? 3;
-      if (p.st === 'apar' || (p.apFail && p.st === 'idle')) lag = Math.max(lag, AIR_PARRY.failLand);   // 空中受け流しの失敗(受付中の着地も失敗)
+      // 受付の途中で着地したときは、受付が終わるまで地上で受け流しを続ける(足元への攻撃も受け流せる。apar の処理で失敗の着地硬直になる)
+      const apKeep = p.st === 'apar' && p.t <= AIR_PARRY.startup + AIR_PARRY.active;
+      if (p.st === 'apar' || (p.apFail && p.st === 'idle')) lag = apKeep ? 0 : Math.max(lag, AIR_PARRY.failLand);   // 空中受け流しの失敗
+      if (apKeep) p.vx *= 0.3;
       p.apFail = false;
       p.ld = p.st === 'hit' ? 6 : Math.min(6, lag);
       dust(p.x, GY, 4 + Math.min(6, lag >> 1));
