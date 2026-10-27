@@ -666,7 +666,7 @@ const HAIR_STYLES = {
     if ((it.style || 'center') === 'center') return HAIR_TURNED.bangs(ctx, it, layer);   // センター分けは向き対応の描画に統一(真横も同じ形から描く)
     const { g, K, ol, hcx, hcy, Rh, tr, wv } = ctx;
     const col = it.color || '#4a2c14', style = it.style || 'center',
-      len = Math.max(0, Math.min(1, it.length ?? (style === 'straight' ? 0.5 : 0.1))),
+      len = Math.max(0, Math.min(1.6, it.length ?? (style === 'straight' ? 0.5 : 0.1))),   // 1 より大きいと目にかかる長さ(シゲル)
       px = it.part ?? -0.2,                                           // straight 用(頭頂の始点x)
       R = Rh + 1.5,
       pUD = Math.max(-1, Math.min(1, it.partY ?? (style === 'side' ? 0.6 : 0))),   // 生え際の高さ(center/side)
@@ -3741,7 +3741,7 @@ const HAIR_TURNED = {
     if (layer !== 'front' && layer !== 'farLock') return;
     const { g, K, hcy, Rh, tr, wv, hv } = ctx;
     const col = it.color || '#4a2c14', style = it.style || 'center',
-      len = Math.max(0, Math.min(1, it.length ?? (style === 'straight' ? 0.5 : 0.1))),
+      len = Math.max(0, Math.min(1.6, it.length ?? (style === 'straight' ? 0.5 : 0.1))),   // 1 より大きいと目にかかる長さ(シゲル)
       pUD = Math.max(-1, Math.min(1, it.partY ?? (style === 'side' ? 0.6 : 0))),
       Uc = 0.62 - 0.55 * len - (style === 'straight' ? 0 : 0.155 * pUD),
       bk = Math.max(0, Math.min(1, it.back ?? 1));

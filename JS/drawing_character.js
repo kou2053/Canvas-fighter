@@ -1764,13 +1764,13 @@ const CHARACTER_DRAWS = {
     },
     headShape: 'round',
     hair: [
-      { type: 'bangs', style: 'center', color: '#5a7a2a', length: 0.3, sideburn: 0.4, part: 0.4 },
+      { type: 'bangs', style: 'straight', color: '#5a7a2a', length: 1.4, sideburn: 0.5 },          // 目が隠れるほど長い、もさっとした前髪
     ],
     headgear: [],
     faceDeco: [{ type: 'blush', x: 0.4, y: 0.4, r: 0.16, color: '#f8a888' }, { type: 'dot', x: 0.5, y: 0.32, r: 1.1, color: '#c8865a' }, { type: 'dot', x: 0.38, y: 0.38, r: 1.1, color: '#c8865a' }],   // ほっぺとそばかす
     clothes: [],
     nose: 'round',
-    eyes: { type: 'anime', color: '#3aa83a', x: 0.6, y: 0.08, size: 1.15, width: 1.05, height: 1.05 },
+    eyes: { type: 'anime', color: '#3aa83a', x: 0.6, y: 0.0, size: 1.1, width: 1.05, height: 1.0 },   // 前髪に隠れている
     brows: { type: 'maro', color: '#3a5a1a' },
     mouth: { closed: 'smile', open: 'laugh', x: 0.6, y: 0.56, size: 0.9 },
     moveDust: { color: '#9adf6a', color2: '#f0ffb0', rate: 0.3, size: 0.8, life: 30, from: 0.1, to: 0.5, behind: 6 },
