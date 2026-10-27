@@ -417,13 +417,14 @@ function pupHitWindow(p, o, P, A_, m, U, tt) {
   if (pupStrike(p, o, P, m, { x: bx, y: P.y + m.ry, w: m.rw, h: m.rh })) { A_.hitN++; A_.hitT = A_.t; }
 }
 // 1回当てる。相手の背中側から当てたときはガードできない(挟み撃ち)。当たったら true
-function pupStrike(p, o, P, m, rect) {
+function pupStrike(p, o, P, m, rect, guardable = false) {   // guardable: 背中側から当ててもガードできる(超必殺技の呪糸)
   if (o.st === 'held' || o.st === 'ko') return false;
   const hit = hitPartForRect(o, rect);
   if (!hit) return false;
   const S = p.ch.pupRaw, back = (P.x - o.x) * (p.x - o.x) < 0 && Math.abs(P.x - o.x) > 12;   // ロロが相手の向こう側(本体と反対側)
   let M = m;
-  if (back) M = m._back || (m._back = { ...m, ub: true, d: Math.max(1, Math.round(m.d * S.backDmg)) });
+  if (back && guardable) M = m._backG || (m._backG = { ...m, d: Math.max(1, Math.round(m.d * S.backDmg)) });   // ダメージは背中側の倍率のまま、ガードはできる
+  else if (back) M = m._back || (m._back = { ...m, ub: true, d: Math.max(1, Math.round(m.d * S.backDmg)) });
   const proxy = { f: P.x <= o.x ? 1 : -1, vx: 0, own: p, x: P.x, y: m.low ? GY : P.y, pup: true, mid: null };   // low の技は空中から当てても、しゃがみ受け流しできない
   const hp0 = o.hp, st0 = o.st;
   applyHit(proxy, o, M, hit.zone, hit.y);
@@ -440,7 +441,7 @@ function pupStringHits(p, o, P, A_, m, U, tt) {
   if (A_.hitN >= N || (A_.hitN && A_.t - A_.hitT < iv)) return;
   const x0 = Math.min(p.x, P.x), x1 = Math.max(p.x, P.x);
   if (o.x < x0 - 10 || o.x > x1 + 10) return;                         // 二人の間にいないと当たらない
-  if (pupStrike(p, o, P, m, { x: o.x - 15, y: GY - 110, w: 30, h: 90 })) {
+  if (pupStrike(p, o, P, m, { x: o.x - 15, y: GY - 110, w: 30, h: 90 }, true)) {   // 超必殺技はシールドでガードできる
     A_.hitN++; A_.hitT = A_.t;
     o.x += (((p.x + P.x) / 2) - o.x) * 0.25;                          // 糸に絡めとられて、二人の真ん中へ寄せられる
   }
