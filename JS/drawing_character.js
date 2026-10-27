@@ -1825,7 +1825,7 @@ const CHARACTER_DRAWS = {
       legPatch: false,
       armDecoration: false,
     },
-    headShape: 'elegant',
+    headShape: 'illustGirl',
     hair: [
       { type: 'long', color: '#eaf2ff', length: 1.15, volume: 8, wave: 0.05, tip: 'flat' },
       { type: 'bangs', style: 'straight', color: '#eaf2ff', length: 0.55, sideburn: 1.1 },
@@ -2143,7 +2143,7 @@ const CHARACTER_DRAWS = {
       legPatch: false,
       armDecoration: false,
     },
-    headShape: 'heroine',
+    headShape: 'animeGirl',
     hair: [
       { type: 'long', color: '#b81e3a', length: 0.7, volume: 8, wave: 0.6, tip: 'round' },
       { type: 'bangs', style: 'seeThrough', color: '#b81e3a', length: 0.95, drop: 0.85, count: 15, spread: 1.4, sideburn: 0.9 },   // シースルーぱっつん(すき間から額が見える)
@@ -2153,7 +2153,7 @@ const CHARACTER_DRAWS = {
     clothes: [
       { type: 'skirt', color: '#1e1a2a', trim: '#e0304a', length: 0.3, flare: 9, waist: 0.05 },
     ],
-    nose: 'girl',
+    nose: 'Rina',
     eyes: { type: 'anime', color: '#d4a020', x: 0.6, y: 0.1, size: 1.05, width: 1, height: 0.9 },   // 金色の目
     brows: { type: 'arch', thickness: 1.5, color: '#7a1020' },
     mouth: { closed: 'smirk', open: 'laugh', x: 0.6, y: 0.57, size: 0.8, width: 0.5, lineWidth: 1.1, color: '#8a1a2a' },
