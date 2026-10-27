@@ -423,6 +423,7 @@ function pupStrike(p, o, P, m, rect, guardable = false) {   // guardable: 背中
   if (!hit) return false;
   const S = p.ch.pupRaw, back = (P.x - o.x) * (p.x - o.x) < 0 && Math.abs(P.x - o.x) > 12;   // ロロが相手の向こう側(本体と反対側)
   let M = m;
+  if (o.escG > 0) guardable = true;                                   // コンボ抜けの直後は、背後からでもガードできる(script.js の COMBO_BREAK)
   if (back && guardable) M = m._backG || (m._backG = { ...m, d: Math.max(1, Math.round(m.d * S.backDmg)) });   // ダメージは背中側の倍率のまま、ガードはできる
   else if (back) M = m._back || (m._back = { ...m, ub: true, d: Math.max(1, Math.round(m.d * S.backDmg)) });
   const proxy = { f: P.x <= o.x ? 1 : -1, vx: 0, own: p, x: P.x, y: m.low ? GY : P.y, pup: true, mid: null };   // low の技は空中から当てても、しゃがみ受け流しできない

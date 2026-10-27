@@ -259,6 +259,8 @@ const JUST_GUARD = { window: 4, gap: 5 };
 const jgWin = (o) => o.ch.jg ?? JUST_GUARD.window;
 const isJustGuard = (o) => o.st === 'shield' && !o.jgFree && o.t < jgWin(o);
 const isGuarding = (o) => o.st === 'shield' && (o.jgFree || o.t >= jgWin(o) + JUST_GUARD.gap);
+// コンボ抜け(applyHit): 同じ技を same 回 / 合計 hits ヒットで、硬直を stun F までにして inv F 無敵(つかみも当たらない)
+const COMBO_BREAK = { same: 5, hits: 24, stun: 4, inv: 30, guard: 120 };   // guard: 抜けたあと、背後からの挟み撃ちもガードできるF
 const dashInvuln = (o) => o.st === 'dash' && !o.airDash && o.t < (o.bd ? DASH_INVULN.back : DASH_INVULN.front);
 // 空中受け流し: 空中でしゃがみ(下)を2回(14F 以内) か、空中受け流しのキー(設定。初期設定は X)。出てから startup F 後の active F の間に攻撃を受けると成功
 //   成功: 地上のしゃがみ受け流しと同じ(CROUCH_PARRY / キャラの crouchParry の倍率)。
@@ -533,7 +535,8 @@ function hitBounce(p, m) {
 const rageActive = (p) => !!(p && p.ch && p.ch.rage && p.hp > 0 && p.hp <= p.ch.hp * p.ch.rage.hp);
 const rageMul = (p) => (rageActive(p) ? p.ch.rage.dmg : 1);
 function applyHit(p, o, m, zn = 'torso', hy = null) {
-  if (dashInvuln(o) || moveInvuln(o)) return;   // ダッシュの無敵(前 5F / 後ろ 8F)・技の無敵(超必殺技など)
+  if (dashInvuln(o) || moveInvuln(o)) return;
+  if (o.escT > 0) return;                       // コンボ抜け直後の無敵(COMBO_BREAK)   // ダッシュの無敵(前 5F / 後ろ 8F)・技の無敵(超必殺技など)
   if ((o.st === 'throw' && o.tg >= 0) || o.st === 'held') return; // 投げ中は割り込めない
   if (typeof puppetShield === 'function' && puppetShield(p, o, m)) return;   // パペット(ロロ)が前にいれば身代わりになって受ける(puppet.js)
   // カウンター(ルリの逆流など): 構えの持続の間に攻撃を受けたら、ダメージを受けずに打ち返しの技(mv.ctr)へ移る。飛び道具は跳ね返す('jg' を返す)
@@ -690,6 +693,17 @@ function applyHit(p, o, m, zn = 'torso', hy = null) {
   if (LK) luckApply(LK, owner, o, o.x, cy);
   if (fnm > 1) { fx.push({ k: 'txt', text: 'FINISH!', x: o.x, y: o.y - 175, t: 44, l: 44, c: '#ff3a5a', s: 24 }); if (save.cfg.shake) { shakeT = Math.max(shakeT, 10); shakeP = Math.max(shakeP, 6); } }                        // 運の効果(回復・SP・硬直)
   if (m.chill && !apOk && typeof chillAdd === 'function') chillAdd(owner, o, m.chill * (cg ? 0.5 : 1), false);   // 凍結: 冷えがたまる・凍る
+  // コンボ抜け: 1つのコンボで同じ技を COMBO_BREAK.same 回以上、または COMBO_BREAK.hits ヒット以上当てられたら、
+  //   硬直をすぐ終わらせて少しの間 無敵にする(挟み撃ち・壁際などで同じ技を当て続ける永久コンボを防ぐ)
+  if (o.st === 'hit' && ((o.cbMoves[m.k] || 0) >= COMBO_BREAK.same || o.cb >= COMBO_BREAK.hits) && o.hp > 0) {
+    o.t = Math.min(o.t, COMBO_BREAK.stun);
+    o.escT = COMBO_BREAK.inv;
+    o.escG = COMBO_BREAK.guard;               // しばらく背後からの挟み撃ちもガードできる(また挟まれてもシールドで抜けられる)
+    o.airStunCanExpire = true;
+    o.vx = (o.x >= p.x ? 1 : -1) * 3;
+    fx.push({ k: 'txt', text: 'ESCAPE!', x: o.x, y: o.y - 160, t: 36, l: 36, c: '#9ff', s: 18 });
+    fx.push({ k: 'ring', x: o.x, y: o.y - 60, r: 70, t: 14, l: 14, c: '#9ff' });
+  }
   hitBounce(p, m);                  // bounce: 当てた側が跳ね返る(シノの空中二段蹴りなど)
   hs = cg ? cg.stop : (m.hst ?? Math.min(HIT_STOP.hitMax, Math.round(HIT_STOP.hitBase + d * HIT_STOP.hitPerDamage))) + (Z.stop || 0);
   const c = fxColor(m) || '#ff8',
@@ -760,7 +774,7 @@ function canGrab(p, o, T) {
   // 掴める状態: 待機・ガード・着地隙・ダッシュ・攻撃中・ブレイク・硬直中、と まだ掴んでいない投げ(掴みが出る前・空振りの隙)
   if (!['idle', 'shield', 'sdown', 'land', 'dash', 'atk', 'break', 'hit'].includes(o.st) && !(o.st === 'throw' && o.tg < 0)) return false;
   if (o.y < GY) return false;
-  if (dashInvuln(o) || moveInvuln(o)) return false;
+  if (dashInvuln(o) || moveInvuln(o) || o.escT > 0) return false;   // コンボ抜けの無敵中はつかめない
   return grabReach(p, o, T);
 }
 // 投げ同士が同時に出たか(相手の掴みがほぼ同じタイミングで出ている)

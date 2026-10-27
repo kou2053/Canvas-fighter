@@ -38,6 +38,8 @@ const LUCK_SUITS = [
 function elemTick(A, B) {
   for (const p of [A, B]) {
     const o = p === A ? B : A;
+    if (p.escG > 0) p.escG--;
+    if (p.escT > 0) { p.escT--; if (p.escT % 4 === 0) PT.push({ x: p.x + (R() - 0.5) * 30, y: p.y - 30 - R() * 70, vx: 0, vy: -1, t: 14, l: 14, c: '#bff', g: 0, s: 0.5 }); }   // コンボ抜けの無敵
     chillStep(p);
     heatStep(p);
     photoStep(p);
