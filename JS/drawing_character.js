@@ -2380,19 +2380,17 @@ const CHARACTER_SKINS = {
   ],
   // シゲル  palette: sprout / sprout2(頭の芽) / flower(芽の花。null で無し) / cape / cape2(背中の葉。cape: null で無し)
   'シゲル': [
-    // 秋の実り: 橙のパーカー・紅葉のマント・どんぐり色の髪
+    // 秋の実り: 橙のパーカー・紅葉のマント(髪の色はスキンで変えない)
     { name: '秋の実り', color: '#e8862a', pj: '#ffb040',
       palette: { sprout: '#e8a030', sprout2: '#8a5a2a', cape: '#e85a2a', cape2: '#c8862a', flower: null },
       draw: {
         body: { top: { type: 'hoodie', color: '#e8862a', strings: '#fff0c0', pocket: true }, bottom: { type: 'shorts', color: '#5a3a1a', hem: 0.62 }, shoesColor: '#3a2410',
-          lowerArm: { wrap: { color: '#a8601a', stripe: '#7a4010', from: 0.1, to: 0.9, count: 5 } } },
-        hair: [{ ...CD('シゲル').hair[0], color: '#7a4a1a' }] } },
+          lowerArm: { wrap: { color: '#a8601a', stripe: '#7a4010', from: 0.1, to: 0.9, count: 5 } } } } },
     // 花咲き: 桃色の花が咲いた芽・若草のパーカー・花びらのマント
     { name: '花咲き', color: '#9ae07a', pj: '#ff9ac8',
       palette: { sprout: '#7ad04a', sprout2: '#4a9a2a', flower: '#ff7ab8', cape: '#ffb0d0', cape2: '#ff8ac0' },
       draw: {
         body: { top: { type: 'hoodie', color: '#9ae07a', strings: '#ff9ac8', pocket: true }, bottom: { type: 'shorts', color: '#f0e0c0', hem: 0.62 }, shoesColor: '#e87aa8' },
-        hair: [{ ...CD('シゲル').hair[0], color: '#8ac04a' }],
         faceDeco: [{ type: 'blush', x: 0.4, y: 0.4, r: 0.18, color: '#ff9ab8' }] } },
     // 深い森: 濃い緑のパーカー・茶色のきのこ色の芽・苔のマント
     { name: '深い森', color: '#1e4a2a', pj: '#7ae0a0',
@@ -2400,7 +2398,6 @@ const CHARACTER_SKINS = {
       draw: {
         body: { top: { type: 'hoodie', color: '#1e4a2a', strings: '#c8a07a', pocket: true }, bottom: { type: 'shorts', color: '#3a2a1a', hem: 0.62 }, shoesColor: '#2a1a10',
           lowerArm: { wrap: { color: '#1e5a2a', stripe: '#0e3a1a', from: 0.1, to: 0.9, count: 5 } } },
-        hair: [{ ...CD('シゲル').hair[0], color: '#2a3a1a' }],
         eyes: { ...CD('シゲル').eyes, color: '#e0a03a' } } },
   ],
   // ギア  palette: helm / helm2(頭の装甲) / visor(目) / core(胸の炉心) / stripe(赤い線) / pod(肩のポッド) / thruster(背中の噴射口)
