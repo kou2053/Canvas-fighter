@@ -1774,7 +1774,7 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
       f: { w: [-0.3, -0.5, 1.4, 0.4, 0.7, 1.4, 0, 0.6, -0.6, -0.5, 0.5, -8], s: [0.4, 2.0, 0.3, -0.5, -0.3, 1.1, 0, 0.9, -0.3, -0.8, 0.3, 18] },             // トランプフラッシュ
       b: { w: [0.2, 1.0, 1.6, 0, 0.6, 1.6, 0, 0.6, -0.6, -0.3, 0.5, 2], s: [-0.4, 0.8, 1.6, 0, 1.6, 0.1, 0, 0.9, -1.4, 0.4, -0.9, -10] },                   // ダブルダウン: 後ろへ跳んでカードを投げる
       u: { w: [0.2, 0.4, 1.8, 0, 0.5, 1.6, 0, 0.6, -1.0, -0.3, 0.9, 0], s: [-0.3, 2.9, 0.4, 0.4, 0.8, 1.3, 0, 0.3, -0.2, -0.3, 0.2, 4] },                    // シルクハット: 帽子をはね上げる
-      d: { w: [0.4, 0.6, 1.5, 0, 0.6, 1.5, 0, 1.1, -1.6, 0.2, -1.0, -2], s: [0.5, 1.0, 1.2, 0, 0.8, 1.2, 0, 1.5, -0.05, -0.9, -1.1, 18] },                  // ローカード: 低く投げる
+      d: { w: [0.3, -0.6, 1.4, 0.3, 0.6, 1.5, 0, 1.1, -1.6, 0.2, -1.0, -6], s: [0.7, 1.0, 0.1, -0.2, 0.6, 1.4, 0, 1.4, -1.2, -0.8, -1.0, 20] },                  // ロイヤルカット: 低く踏み込んでカードの刃で薙ぐ
       da: { w: [0.5, -0.6, 2.0, 0, 0.9, 1.2, 0, 1.1, -0.9, -0.7, 0.6, -10], s: [0.7, 1.8, 0.2, -0.4, -0.5, 0.8, 0, 1.0, -0.2, -1.0, 0.4, 22] },             // ラッシュディール
       an: { w: [-0.4, -0.4, 1.2, 0.3, 0.4, 1.2, 0, 0.9, -1.4, 0.3, -1.0, -4], s: [0.4, 2.1, 0.2, -0.3, -0.5, 1.0, 0, 0.7, -1.0, -0.2, -0.7, 10] },          // カードスピン
       af: { w: [0.3, 2.4, 0.5, 0.3, 1.0, 1.2, 0, 1.0, -1.4, 0.3, -0.9, -4], s: [0.3, 0.9, 0.2, -0.3, 0.6, 1.2, 0, 0.7, -0.8, -0.2, -0.6, 12] },             // ハイカード
@@ -1787,22 +1787,24 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
       sd: { w: [-0.1, -0.2, 1.8, 0, 0.5, 1.6, 0, 0.6, -0.8, -0.4, 0.6, -6], s: [0.4, 0.7, 0.3, 0, 0.6, 1.4, 0, 1.0, -1.0, -0.7, 0.5, 12] },                 // ダイスロール: 低く転がす
       c1: { w: [-0.2, 0.6, 1.8, 0.3, 0.6, 1.8, 0, 0.5, -0.5, -0.4, 0.4, -6], s: [0.3, 1.9, 0.2, -0.5, 1.4, 0.2, 0, 0.7, -0.4, -0.6, 0.35, 10] },              // デッキシャッフル: 両手から扇に放つ
       c2: { w: [0.0, 2.8, 0.2, 0.4, 0.3, 1.6, 0, 0.3, -0.3, -0.3, 0.3, 0], s: [-0.1, 2.0, 1.4, 0.4, 0.3, 1.6, 0, 0.3, -0.3, -0.3, 0.3, 0] },                  // すりかえ: 指を鳴らす
+      c3: { w: [-0.35, 3.0, 0.3, 0.2, 2.6, 0.5, 0, 0.6, -0.7, -0.5, 0.5, -6], s: [0.75, 0.9, 0.1, 0, 0.7, 0.4, 0, 1.1, -0.8, -0.8, 0.4, 20] },                 // ジョーカーブレード: 頭上から振り下ろす
       gx: { w: [0.0, 2.6, 0.3, 0.3, 0.4, 1.6, 0, 0.4, -0.4, -0.3, 0.3, 0], s: [0.35, 1.6, 0.1, -0.3, 1.5, 0.1, 0, 0.8, -0.4, -0.7, 0.4, 14] },              // ワイルドカード: 1枚引いて突き出す
       sx: { w: [-0.2, 2.6, 0.4, 0.3, 2.6, 0.4, 0, 0.5, -0.5, -0.4, 0.4, 0], s: [0.3, 1.6, 0.1, -0.3, 1.6, 0.1, 0, 0.8, -0.4, -0.7, 0.4, 12] },               // ジャックポット
     },
-    combos: ['Z→→Z→A カードショット (絵柄で効果が変わる)', '↓Z→↓↘→+A デッキシャッフル (5枚の扇)', '←A イリュージョン (相手の後ろへ回って攻める)', '画面端で ↓↙←+Z すりかえ (位置を入れかえる)'],
+    combos: ['Z→→Z→A カードショット (絵柄で効果が変わる)', '↓Z ロイヤルカット (相手の体力が少ない時の決め技)', '←A イリュージョン→→↓↘+Z ジョーカーブレード (後ろから大技)', '次が♠のときにカードを当ててから→Z トランプフラッシュ'],
     moves: {
       n: { name: 'カードフリック', startup: 4, active: 3, recovery: 6, damage: 4, knockX: 2, knockY: -4, hitstun: 15, effect: { preset: 'card', size: 0.6, attack: [{ type: 'crescent', angle: -1, width: 6, span: 1.8, color: '#ffffff' }] }, box: { x: 15, y: -120, w: 52, h: 48 } }, // 斜め上へはじく。高い所に当たる(跳ぼうとした相手を止める)
-      f: { name: 'トランプフラッシュ', startup: 8, active: 4, recovery: 12, damage: 8, knockX: 6, knockY: -3, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', width: 8, span: 2.6, color: '#ffffff' }, { type: 'cards', r: 34, count: 5 }] }, box: { x: 28, y: -96, w: 86, h: 46 } },
+      f: { name: 'トランプフラッシュ', startup: 9, active: 4, recovery: 15, damage: 9, knockX: 9, knockY: -5, finish: true, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', width: 8, span: 2.6, color: '#ffffff' }, { type: 'cards', r: 34, count: 5 }] }, box: { x: 28, y: -96, w: 86, h: 46 } },
       // ダブルダウン: 後ろへ跳びながらカードを1枚、斜め下へ投げる(絵柄の順番どおりの効果)
       b: { name: 'ダブルダウン', startup: 8, active: 3, recovery: 14, damage: 0, knockX: 0, knockY: 0, hitstun: 0, launch: { x: -7, y: -6 }, box: { x: 0, y: 0, w: 0, h: 0 },
         projectile: { speed: 10, damage: 4, radius: 10, life: 40, path: { type: 'straight', angle: 18 } }, effect: { preset: 'card', attack: [{ type: 'cards', at: 'body', r: 24, count: 3 }] } },
       u: { name: 'ハットスロー', startup: 7, active: 3, recovery: 18, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
         projectile: { speed: 9, damage: 6, radius: 16, life: 34, knockX: 2, knockY: -10, hitstun: 24, look: { preset: 'card', size: 1.6 }, path: { type: 'straight', angle: -72 }, from: { x: 20, y: -120 } },
         effect: { preset: 'card', attack: [{ type: 'star', at: 'head', count: 4, r: 14, spin: 2, color: '#ffe14a' }] } }, // 斜め上へ大きなカードを投げる対空(絵柄の順番どおりの効果)
-      d: { name: 'ローカード', startup: 6, active: 3, recovery: 12, damage: 0, knockX: 0, knockY: 0, hitstun: 0, box: { x: 0, y: 0, w: 0, h: 0 },
-        projectile: { speed: 11, damage: 4, radius: 9, life: 22, knockX: 3, knockY: -1, hitstun: 20, path: 'ground', from: { x: 30, y: -10 } },
-        effect: { preset: 'card', attack: [{ type: 'lines', count: 2, at: 'feet', y: -10, length: 50 }] } }, // 地面すれすれにカードを飛ばす(短い距離。絵柄の効果つき)
+      // ロイヤルカット: カードを重ねた大きな刃で足元を薙ぎ払う。強く吹き飛ばす決め技(相手の体力が3割以下だと FINISH! でダメージ ×1.5)
+      d: { name: 'ロイヤルカット', startup: 9, active: 4, recovery: 18, damage: 12, knockX: 9, knockY: -9, hitstun: 28, finish: true,
+        effect: { preset: 'card', attack: [{ type: 'crescent', angle: 1, width: 12, span: 2.6, color: '#ffffff' }, { type: 'cards', at: 'feet', x: 50, y: -14, r: 40, count: 6 }], hit: [{ type: 'impact', r: 34, color: '#e0304a', color2: '#ffffff' }, { type: 'cards', r: 40, count: 8 }] },
+        box: { x: 20, y: -30, w: 112, h: 30 } },
       da: { name: 'ラッシュディール', startup: 6, active: 9, recovery: 14, damage: 3, hits: 3, hitInterval: 3, hitStop: 4, knockX: 3, knockY: -2, hitstun: 20, launch: { x: 12 }, effect: { preset: 'card', attack: [{ type: 'lines', count: 4, at: 'body', length: 100 }, { type: 'cards', r: 40, count: 6 }] }, box: { x: 20, y: -86, w: 66, h: 52 } },
       an: { name: 'カードスピン', landLag: 4, startup: 4, active: 7, recovery: 9, damage: 4, knockX: 2, knockY: -3, hitstun: 16, effect: { preset: 'card', attack: [{ type: 'crescent', width: 6, span: 3.4, color: '#ffffff' }, { type: 'cards', at: 'body', r: 34, count: 4 }] }, box: { x: -15, y: -90, w: 75, h: 52 } },
       af: { name: 'ハイカード', landLag: 9, startup: 6, active: 5, recovery: 11, damage: 7, knockX: 5, knockY: -4, hitstun: 20, effect: { preset: 'card', attack: [{ type: 'crescent', angle: 1, width: 9, span: 2.4, color: '#ffffff' }] }, box: { x: 20, y: -96, w: 80, h: 56 } },
@@ -1830,6 +1832,10 @@ motionFrom: 'd', startup: 8, active: 5, recovery: 18, damage: 7, knockX: 2, knoc
       // すりかえ: 指を鳴らして、相手と立ち位置を入れかえる(ダメージなし)
       c2: { name: 'すりかえ', command: '↓↙←+Z', startup: 12, active: 1, recovery: 14, damage: 0, knockX: 0, knockY: 0, hitstun: 0, warp: 'swap', rank: 3,
         effect: { preset: 'card', start: [{ type: 'star', at: 'front', count: 4, r: 14, spin: 2, color: '#ffe14a' }] }, box: { x: 0, y: 0, w: 0, h: 0 } },
+      // ジョーカーブレード: カードを束ねた大きな剣を頭上から振り下ろす決め技(FINISH! 対応)。出は遅い
+      c3: { name: 'ジョーカーブレード', command: '→↓↘+Z', startup: 14, active: 5, recovery: 24, damage: 15, knockX: 12, knockY: -8, hitstun: 32, finish: true, rank: 4,
+        effect: { preset: 'card', strength: 1.5, start: [{ type: 'cards', at: 'front', r: 30, count: 6, duration: 12, follow: true }], attack: [{ type: 'crescent', angle: 1, width: 16, span: 2.8, color: '#ffffff' }, { type: 'cards', r: 60, count: 10 }, { type: 'shake', duration: 6, power: 4 }], hit: [{ type: 'impact', r: 44, color: '#e0304a', color2: '#ffffff' }, { type: 'cards', r: 50, count: 10 }] },
+        box: { x: 15, y: -132, w: 102, h: 132 } },
       // ワイルドカード: 次に出る絵柄(HUD に出る)で中身が決まる。♠ ジャック=大ダメージ / ♥ クイーン=回復 / ♦ キング=3枚の大きなカード / ♣ エース=長く動けなくする
       gx: { name: 'ワイルドカード', cost: 25, suitPick: true, startup: 8, active: 5, recovery: 20, damage: 8, knockX: 8, knockY: -4, hitstun: 26, box: { x: 20, y: -112, w: 112, h: 92 },
         effect: { preset: 'card', strength: 1.5, start: [{ type: 'cards', at: 'body', r: 40, count: 6, duration: 12 }] },

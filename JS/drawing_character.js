@@ -2204,7 +2204,11 @@ const CHARACTER_DRAWS = {
     // トランプの扇(手の上に3枚)。投げる技の発生の後は1枚少なく見える
     weapon(ctx, e, ux, uy) {
       if (typeof fxCard !== 'function') return;
-      const a = Math.atan2(uy, ux), col = PAL(ctx, 'card', '#e0304a');
+      const a = Math.atan2(uy, ux), col = PAL(ctx, 'card', '#e0304a'), p = ctx.p;
+      if (p && p.st === 'atk' && p.mv && /^(d|f|c3)$/.test(p.mv.k)) {     // 決め技: カードを重ねて大きな刃にする
+        for (let i = 0; i < 6; i++) fxCard(e[0] + ux * (10 + i * 9), e[1] + uy * (10 + i * 9), 6.5 - i * 0.3, a + Math.PI / 2 + (i % 2 ? 0.08 : -0.08), col, '♠♥♦♣'[i % 4], '#111');
+        return;
+      }
       for (let i = 0; i < 3; i++) fxCard(e[0] + ux * 9, e[1] + uy * 9, 5.5, a + Math.PI / 2 + (i - 1) * 0.35, col, '♠♥♦'[i], '#111');
     },
   },

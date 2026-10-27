@@ -569,7 +569,9 @@
 //                  ワイルドカード(ゲージ技 suitPick + variants): 次の絵柄で中身が決まり、絵柄が1つ進む(♠ ジャック=大ダメージ / ♥ クイーン=体力+18 / ♦ キング=大きなカード3枚 / ♣ エース=長く動けなくする)
 //                  イリュージョン(←A): 出始め無敵で相手の後ろへ瞬間移動して打つ / すりかえ(↓↙←+Z): 相手と位置を入れかえる(ダメージなし)
 //                  ダイスロール(↓A): 地面を転がるサイコロ(2回まで当たる。出目は無い)
-//  ・技に書ける新しい項目(character.js): chill / shatter / heat / vent / suitPick / warp('behind' / 'swap') / heal / bloom / variants
+//                  決め技(技の finish: true): ↓Z ロイヤルカット / →Z トランプフラッシュ / →↓↘+Z ジョーカーブレード … カードを重ねた刃で強く吹き飛ばす。
+//                  相手の体力が FINISH.hp(3割)以下なら「FINISH!」でダメージ ×1.5(elements.js の FINISH)
+//  ・技に書ける新しい項目(character.js): chill / shatter / heat / vent / suitPick / finish / warp('behind' / 'swap') / heal / bloom / variants
 //    キャラに書ける項目: stats.airDash / stats.photosynthesis / heat。弾に書ける項目: hits / hitEvery(多段)/ chill / luck
 //  ・新しいエフェクトの部品(effect.js): gust(風の筋)/ tornado(竜巻)/ icicle(氷柱)/ thorns(いばら)/ vine(つる)/ leaves(葉)/ snow(雪の結晶)/
 //    steam(蒸気)/ gear(歯車)/ cards(トランプ)/ laser(光線)/ missile(煙の軌跡)。プリセット: gale / cyclone / frost / glacier / verdant / thorn / steel / thruster / card

@@ -138,7 +138,7 @@ const buildMove = (c, k, m) => {
     bnc: m.bounce || null, flt: m.float ?? null, ub: !!m.unblockable, // unblockable: ガード・ジャストガード・しゃがみ受け流しができない(つかみ技)
     // 当たる(ガードされる)と自分が跳ね返る速さ / 空中で技の出始め〜持続の間、落ちる速さをこれ以下にする(浮いて止まる)
     fol: m.follow, veil: m.veil || 0, // 水まとい: 追撃の設定(follow) / ゲージ技で AQUA ゲージをためる量(veil)
-    chill: m.chill || 0, shatter: !!m.shatter, suitPick: !!m.suitPick, heat: m.heat || 0, vent: !!m.vent, warp: m.warp || null, heal: m.heal || 0, bloom: !!m.bloom, // 新しいキャラのしくみ(elements.js)
+    chill: m.chill || 0, shatter: !!m.shatter, suitPick: !!m.suitPick, fin: !!m.finish, heat: m.heat || 0, vent: !!m.vent, warp: m.warp || null, heal: m.heal || 0, bloom: !!m.bloom, // 新しいキャラのしくみ(elements.js)
     ctr: m.counter ? buildMove(c, k + '_ctr', m.counter) : null }; // カウンター: 構えの間に打撃を受けると出る技(character.js 冒頭の【counter】) // 水まとい: 追撃の設定(follow) / ゲージ技で AQUA ゲージをためる量(veil)。projectile.js の「水まとい」 // 叩きつけ(地面でバウンド) / 吸血(与えたダメージの割合だけ回復) / 血の代償(出すと自分の体力が減る)
 };
 
@@ -641,8 +641,9 @@ function applyHit(p, o, m, zn = 'torso', hy = null) {
   o.cbn = o.cb;
   o.cbT = 70;
   const LK = !cg && typeof luckRoll === 'function' ? luckRoll(m) : null,                 // 運(カルタ。elements.js)
-    shm = typeof shatterCheck === 'function' ? shatterCheck(p, o, m) : 1;               // 凍った相手: 氷が砕ける(セツカ)
-  const d = Math.max(1, Math.round(m.d * ((p.ch && p.ch.dm) || 1) * rageMul(owner) * (p.crAtk ? CROUCH_ATTACK : 1) * Z.dmg * (cg ? cg.dmg : 1) * (LK ? LK.mul : 1) * shm * Math.max(m.ms ?? 0.5, 1 - 0.07 * (o.cb - 1))) + (shm > 1 ? CHILL.shatterBonus : 0));   // ms = 補正の下限(超必殺技はコンボの最後でも威力が落ちにくい)
+    shm = typeof shatterCheck === 'function' ? shatterCheck(p, o, m) : 1,               // 凍った相手: 氷が砕ける(セツカ)
+    fnm = m.fin && !cg && typeof FINISH !== 'undefined' && o.hp <= o.ch.hp * FINISH.hp ? FINISH.mul : 1;   // 決め技: 相手の体力が少ないと FINISH!(カルタ)
+  const d = Math.max(1, Math.round(m.d * ((p.ch && p.ch.dm) || 1) * rageMul(owner) * (p.crAtk ? CROUCH_ATTACK : 1) * Z.dmg * (cg ? cg.dmg : 1) * (LK ? LK.mul : 1) * shm * fnm * Math.max(m.ms ?? 0.5, 1 - 0.07 * (o.cb - 1))) + (shm > 1 ? CHILL.shatterBonus : 0));   // ms = 補正の下限(超必殺技はコンボの最後でも威力が落ちにくい)
   const hp0 = o.hp;
   o.hp = Math.max(0, o.hp - d);
   msHit(owner, o, hp0 - o.hp, apOk ? 0 : o.cb, mid); // 試合の記録: ダメージ・コンボ・命中
@@ -686,7 +687,8 @@ function applyHit(p, o, m, zn = 'torso', hy = null) {
     o.cb = 0;                       // やられていないので、コンボにも数えない
     o.cbMoves = {};
   }
-  if (LK) luckApply(LK, owner, o, o.x, cy);                        // 運の効果(回復・SP・硬直)
+  if (LK) luckApply(LK, owner, o, o.x, cy);
+  if (fnm > 1) { fx.push({ k: 'txt', text: 'FINISH!', x: o.x, y: o.y - 175, t: 44, l: 44, c: '#ff3a5a', s: 24 }); if (save.cfg.shake) { shakeT = Math.max(shakeT, 10); shakeP = Math.max(shakeP, 6); } }                        // 運の効果(回復・SP・硬直)
   if (m.chill && !apOk && typeof chillAdd === 'function') chillAdd(owner, o, m.chill * (cg ? 0.5 : 1), false);   // 凍結: 冷えがたまる・凍る
   hitBounce(p, m);                  // bounce: 当てた側が跳ね返る(シノの空中二段蹴りなど)
   hs = cg ? cg.stop : (m.hst ?? Math.min(HIT_STOP.hitMax, Math.round(HIT_STOP.hitBase + d * HIT_STOP.hitPerDamage))) + (Z.stop || 0);
@@ -2599,6 +2601,7 @@ function cvDraw() {
            ...(((m.proj || m.k === 's') && pjSpec(c, m).luck === 'suit') ? [['カード', '絵柄は ♠→♥→♦→♣ の順番 / ♠ダメージ×1.5 ♥体力+4 ♦SP+10 ♣硬直+10F']] : []),
            ...(m.warp ? [['移動', m.warp === 'swap' ? '相手と位置を入れかえる' : '相手の後ろへ瞬間移動']] : []),
            ...(m.heal ? [['回復', '体力 +' + m.heal]] : []),
+           ...(m.fin ? [['決め技', '相手の体力が' + Math.round(FINISH.hp * 100) + '%以下なら FINISH! ダメージ ×' + FINISH.mul]] : []),
            ...(m.bloom ? [['開花', '自分の芽をすべてはじけさせる']] : []),
            ...(m.vars ? [[m.suitPick ? '絵柄で変わる' : '切りかえ', m.vars.map((v, i) => (m.suitPick ? '♠♥♦♣'[i] : '') + v.nm.split(':').pop()).join(' / ')]] : []),
            ...(m.ctr ? [['カウンター', '構え中に打撃→打ち返し ' + m.ctr.d + 'ダメ(無敵' + m.ctr.inv + 'F)・飛び道具は跳ね返す']] : []),

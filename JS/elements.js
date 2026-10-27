@@ -26,6 +26,7 @@
 const AIR_DASH = { frames: 14, speed: 9.5, attackFrom: 5 };
 const CHILL = { max: 100, slow: 50, slowMul: 0.8, freeze: 34, immune: 120, decayDelay: 50, decay: 0.3, guardMul: 1 / 3, shatterMul: 1.4, shatterBonus: 4 };
 const SEED_MAX = 3;
+const FINISH = { hp: 0.3, mul: 1.5 };     // 決め技(技の finish: true。カルタのカードの刃): 相手の体力がこの割合以下ならダメージ × mul
 const LUCK_SUITS = [
   { s: '♠', name: 'スペード', c: '#9fb4ff', mul: 1.5 },
   { s: '♥', name: 'ハート', c: '#ff5a7a', heal: 4 },
